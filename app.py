@@ -290,8 +290,6 @@ def main():
         # In ra 1 lần duy nhất
         st.markdown(full_html, unsafe_allow_html=True)
 
-        st.caption("Chú thích: Màu nền thể hiện Ngũ hành cung. Kích thước chữ tự động điều chỉnh.")
-
 
 if __name__ == "__main__":
     main()
