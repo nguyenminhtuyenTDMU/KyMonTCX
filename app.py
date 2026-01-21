@@ -215,16 +215,15 @@ def main():
 
     with st.sidebar:
         st.header("1. Nhập Thời Gian")
-        now = datetime.now()
 
         c1, c2, c3 = st.columns(3)
-        with c1: day = st.number_input("Ngày", 1, 31, now.day)
-        with c2: month = st.number_input("Tháng", 1, 12, now.month)
-        with c3: year = st.number_input("Năm", 1900, 2100, now.year)
+        with c1: day = st.number_input("Ngày", 1, 31)
+        with c2: month = st.number_input("Tháng", 1, 12)
+        with c3: year = st.number_input("Năm", 1900, 2100)
 
         c4, c5 = st.columns(2)
-        with c4: hour = st.number_input("Giờ", 0, 23, now.hour)
-        with c5: minute = st.number_input("Phút", 0, 59, now.minute)
+        with c4: hour = st.number_input("Giờ", 0, 23)
+        with c5: minute = st.number_input("Phút", 0, 59)
 
         btn_lap = st.button("Lập Trận Đồ", type="primary", use_container_width=True)
 
