@@ -1,6 +1,5 @@
 # kymon_logic.py
 from am_lich_vn import AmLichVN
-import math
 
 
 class KyMonLapTran:

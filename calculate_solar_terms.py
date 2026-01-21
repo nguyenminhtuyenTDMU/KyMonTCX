@@ -1,7 +1,6 @@
 from skyfield.api import load
 from skyfield.framelib import ecliptic_frame
 from skyfield.searchlib import find_discrete
-from datetime import timedelta
 import pytz
 
 
