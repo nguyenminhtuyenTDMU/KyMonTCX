@@ -122,7 +122,7 @@ def lay_class_mau(ten_thanh_phan):
     moc = ["Xung", "Phụ", "Thương", "Đỗ", "Giáp", "Ất", "Dần", "Mão", "Chấn", "Tốn", "Mộc"]
     thuy = ["Bồng", "Hưu", "Nhâm", "Quý", "Hợi", "Tý", "Khảm", "Thủy"]
     hoa = ["Anh", "Cảnh", "Bính", "Đinh", "Tỵ", "Ngọ", "Ly", "Hỏa"]
-    tho = ["Nhu", "Cầm", "Nhậm", "Sinh", "Tử", "Mậu", "Kỷ", "Thìn", "Tuất", "Sửu", "Mùi", "Khôn", "Cấn", "Trung", "Thổ"]
+    tho = ["Nhuế", "Cầm", "Nhậm", "Sinh", "Tử", "Mậu", "Kỷ", "Thìn", "Tuất", "Sửu", "Mùi", "Khôn", "Cấn", "Trung", "Thổ"]
 
     ten_goc = ten_thanh_phan.split("/")[0].strip()
     if ten_goc in kim: return "hanh-kim"
