@@ -183,7 +183,7 @@ def render_cung_html_string(data, cung_id, ten_cung_bat_quai, tu_tru_dict):
     tag_thien = tao_tag_tu_tru(thien, tu_tru_dict)
 
     html_sao_status = f'<div style="font-size:0.7em; color:#888; font-weight:normal;">({vuong_suy_sao})</div>' if vuong_suy_sao else ""
-    html_mo_thien = '<span class="tag-mo">Mộ</span>' if ts_thien == 'Mộ' else ''
+    html_mo_thien = '<span class="tag-mo">Mộ</span>' if ts_thien == 'Mộ' else ts_thien
     html_mo_mon = '<span class="tag-mo-mon">[Mộ]</span>' if is_mon_mo else ''
 
     html_tk = '<div class="tag-tk">TK</div>' if is_tk else ''

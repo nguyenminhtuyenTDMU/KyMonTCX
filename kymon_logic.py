@@ -471,22 +471,22 @@ class KyMonLapTran:
 
 
 # --- TEST ---
-if __name__ == "__main__":
-    km = KyMonLapTran()
-
-    # Test ngày: 16/3/2003 11:30
-    kq = km.lap_que(2003, 3, 16, 11, 30)
-
-    print("-" * 40)
-    print("KẾT QUẢ LẬP TRẬN")
-    print("-" * 40)
-    print(kq["ThoiGian"])
-    print(kq["CanChi"])
-    print(kq["ThongTinCuc"])
-    print(kq["TuanThu"])
-    print(kq["TrucPhuSu"])
-    print("-" * 40)
-    print(kq["Data9Cung"])
+# if __name__ == "__main__":
+#     km = KyMonLapTran()
+#
+#     # Test ngày: 16/3/2003 11:30
+#     kq = km.lap_que(2026, 1, 22, 17, 30)
+#
+#     print("-" * 40)
+#     print("KẾT QUẢ LẬP TRẬN")
+#     print("-" * 40)
+#     print(kq["ThoiGian"])
+#     print(kq["CanChi"])
+#     print(kq["ThongTinCuc"])
+#     print(kq["TuanThu"])
+#     print(kq["TrucPhuSu"])
+#     print("-" * 40)
+#     print(kq["Data9Cung"])
     # In thử Cung 6 (Càn) và Cung 4 (Tốn) để xem logic Trường Sinh
     # Ví dụ Can Ất ở cung Càn (Tuất/Hợi) -> Sẽ ưu tiên Mộ (Tuất) thay vì Dưỡng/Thai
     # for c in [4, 6]:
