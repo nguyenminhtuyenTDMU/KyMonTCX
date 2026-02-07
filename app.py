@@ -4,7 +4,6 @@ from datetime import datetime
 import pytz
 from kymon_logic import KyMonLapTran
 
-# ... (CẤU HÌNH & CSS GIỮ NGUYÊN NHƯ BÀI TRƯỚC) ...
 # Lưu ý: Thêm CSS cho badge TK Nhật/Thời
 st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
 
@@ -151,6 +150,7 @@ def main():
         with c4: h = st.number_input("Giờ", 0, 23, now.hour)
         with c5: mi = st.number_input("Phút", 0, 59, now.minute)
         btn = st.button("Lập Trận Đồ", type="primary")
+        text_ld = st.text_area("lý do")
 
     if btn:
         try:
@@ -187,6 +187,9 @@ def main():
                         <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(cc['Thang'].split()[0])}">{cc['Thang']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['M']})</span></div></div>
                         <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(cc['Ngay'].split()[0])}">{cc['Ngay']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['D']})</span></div></div>
                         <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc['Gio'].split()[0])}">{cc['Gio']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['H']})</span></div></div>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;color: #000">
+                        lý do: {text_ld}
                     </div>
                     <div style="margin-top: 10px; text-align: center;color: #000">
                         <b>{tiet}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq['TuanThu']}</b>
