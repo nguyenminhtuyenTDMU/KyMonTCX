@@ -189,9 +189,6 @@ def main():
                         <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc['Gio'].split()[0])}">{cc['Gio']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['H']})</span></div></div>
                     </div>
                     <div style="margin-top: 10px; text-align: center;color: #000">
-                        lý do: {text_ld}
-                    </div>
-                    <div style="margin-top: 10px; text-align: center;color: #000">
                         <b>{tiet}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq['TuanThu']}</b>
                     </div>
                     <div style="font-size: 0.9em; text-align: center; color: #555;">
@@ -201,6 +198,9 @@ def main():
                         <span class="badge-tk-n">Nhật Không: {', '.join(tk_nhat)}</span>
                         <span class="badge-tk-g" style="margin-left:10px">Thời Không: {', '.join(tk_thoi)}</span>
                         <span class="badge-ma" style="margin-left:10px">Mã: {dich_ma}</span>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;color: #000">
+                        lý do: {text_ld}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
