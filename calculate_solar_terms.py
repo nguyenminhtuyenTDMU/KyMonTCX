@@ -73,4 +73,4 @@ def calculate_solar_terms(year):
 
 # --- CHẠY CHƯƠNG TRÌNH ---
 if __name__ == "__main__":
-    calculate_solar_terms(2026)
+    calculate_solar_terms(2003)

@@ -1,295 +1,215 @@
 import streamlit as st
+import textwrap
 from datetime import datetime
-from kymon_logic import KyMonLapTran
 import pytz
+from kymon_logic import KyMonLapTran
 
-# 1. CẤU HÌNH TRANG
-st.set_page_config(
-    page_title="Kỳ Môn Độn Giáp - Trương Chí Xuân",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ... (CẤU HÌNH & CSS GIỮ NGUYÊN NHƯ BÀI TRƯỚC) ...
+# Lưu ý: Thêm CSS cho badge TK Nhật/Thời
+st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
 
-# 2. CSS TÙY CHỈNH (RESPONSIVE & LAYOUT MỚI)
 st.markdown("""
 <style>
+    /* CSS BỔ SUNG CHO 2 LOẠI TUẦN KHÔNG */
+    .badge-tk-n { background-color: #c62828; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Đỏ đậm - Ngày */
+    .badge-tk-g { background-color: #ef6c00; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Cam đậm - Giờ */
+    .badge-ma   { background-color: #fdd835; color: black; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; }
     /* --- GRID CONTAINER --- */
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-        max-width: 900px;
-        margin: 0 auto;
-    }
-
-    /* KHUNG CUNG - CƠ BẢN */
-    .cung-box {
-        border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 6px;
-        height: 160px;
-        position: relative;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-
-    /* --- MÀU NỀN THEO NGŨ HÀNH --- */
-    /* Kim: Xám bạc */
-    .bg-kim  { background-color: #e0e0e0; border: 1px solid #bdbdbd; } 
-    
-    /* Mộc: Xanh lá mạ */
-    .bg-moc  { background-color: #dcedc8; border: 1px solid #a5d6a7; } 
-    
-    /* Thủy: Xanh da trời */
-    .bg-thuy { background-color: #bbdefb; border: 1px solid #90caf9; } 
-    
-    /* Hỏa: Hồng cam */
-    .bg-hoa  { background-color: #ffccbc; border: 1px solid #ffab91; } 
-    
-    /* Thổ: Vàng nâu nhạt (Be) */
-    .bg-tho  { background-color: #fff59d; border: 1px solid #fff176; }
-
-    /* --- ĐỊNH VỊ --- */
-    .than-vi { 
-        position: absolute; top: 5px; right: 5px; 
-        font-weight: bold; font-size: 0.85em; 
-    }
-    .tinh-vi { 
-        position: absolute; top: 18%; left: 50%; 
-        transform: translateX(-50%); text-align: center; width: 100%;
-        font-weight: bold; font-size: 0.9em;
-    }
-    .mon-vi { 
-        position: absolute; bottom: 18%; left: 50%; 
-        transform: translateX(-50%); text-align: center; width: 100%;
-        font-weight: bold; font-size: 1.1em;
-    }
-    .can-thien-ban { 
-        position: absolute; top: 5px; left: 5px; 
-        font-weight: bold; font-size: 1em; line-height: 1;
-    }
-    .can-dia-ban { 
-        position: absolute; bottom: 5px; left: 5px; 
-        font-weight: bold; font-size: 1em; line-height: 1;
-    }
-    .cung-so {
-        position: absolute; bottom: 2px; right: 5px;
-        font-size: 0.7em; color: rgba(0,0,0,0.3); font-style: italic; pointer-events: none;
-    }
-
-    /* Tag Tứ Trụ */
-    .tag-container-thien { position: absolute; top: 22px; left: 5px; display: flex; flex-direction: column; gap: 1px; }
-    .tag-container-dia   { position: absolute; bottom: 22px; left: 5px; display: flex; flex-direction: column; gap: 1px; }
-
-    /* Ký hiệu đặc biệt */
-    .special-tags { 
-        position: absolute; top: 22px; right: 5px; 
-        text-align: right; display: flex; flex-direction: column; align-items: flex-end;
-    }
-
-    /* STYLING TAGS */
-    .tag-tk { color: #d32f2f; border: 1px solid #d32f2f; border-radius: 50%; padding: 0 3px; font-size: 0.5em; font-weight: bold; background: #fff; margin-bottom: 1px;}
-    .tag-ma { background-color: #fdd835; color: #000; border-radius: 2px; padding: 0 3px; font-size: 0.5em; font-weight: bold; margin-bottom: 1px;}
-
-    .tag-mo { font-size: 0.6em; color: #78909c; vertical-align: super; margin-left: 1px; }
-    .tag-mo-mon { font-size: 0.6em; color: #546e7a; font-weight: normal; margin-left: 2px;}
-
-    .tag-can { font-size: 0.5em; border-radius: 2px; padding: 0 3px; color: white; text-align: center; width: 15px;}
-    .tag-y { background-color: #795548; } .tag-m { background-color: #2e7d32; }
-    .tag-d { background-color: #ef6c00; } .tag-h { background-color: #c62828; }
-
-    /* MÀU CHỮ */
-    .hanh-kim { color: #455a64; } .hanh-moc { color: #1b5e20; } 
-    .hanh-thuy { color: #01579b; } .hanh-hoa { color: #b71c1c; } .hanh-tho { color: #4e342e; } 
-
-    /* HEADER */
+    .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 950px; margin: 0 auto; }
+    .cung-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; height: 170px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.08); overflow: hidden; }
+    .bg-kim { background-color: #eeeeee; border: 1px solid #bdbdbd; } .bg-moc { background-color: #e8f5e9; border: 1px solid #a5d6a7; } .bg-thuy { background-color: #e1f5fe; border: 1px solid #81d4fa; } .bg-hoa { background-color: #ffebee; border: 1px solid #ef9a9a; } .bg-tho { background-color: #fff9c4; border: 1px solid #fff59d; }
+    .dia-chi-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 24px; background-color: rgba(255,255,255,0.6); border-top: 1px dotted rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 0 5px; font-size: 0.7em; font-weight: bold; color: #555; }
+    .chi-item { display: flex; align-items: center; gap: 2px; }
+    .than-vi { position: absolute; top: 4px; right: 4px; font-weight: bold; font-size: 0.8em; }
+    .tinh-vi { position: absolute; top: 25px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; font-weight: bold; font-size: 0.85em; }
+    .mon-vi { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; font-weight: bold; font-size: 1.1em; }
+    .can-thien-ban { position: absolute; top: 4px; left: 4px; font-weight: bold; font-size: 1.1em; line-height: 1; }
+    .can-dia-ban { position: absolute; bottom: 30px; left: 4px; font-weight: bold; font-size: 1.1em; line-height: 1; }
+    .cung-so { position: absolute; bottom: 26px; right: 4px; font-size: 0.65em; color: rgba(0,0,0,0.4); font-style: italic; pointer-events: none; }
+    .tag-container-thien { position: absolute; top: 22px; left: 4px; display: flex; flex-direction: column; gap: 1px; }
+    .tag-can { font-size: 0.5em; border-radius: 2px; padding: 0 3px; color: white; text-align: center; width: 16px;}
+    .tag-y { background-color: #795548; } .tag-m { background-color: #2e7d32; } .tag-d { background-color: #ef6c00; } .tag-h { background-color: #c62828; }
+    .tag-mo { font-size: 0.6em; color: #78909c; vertical-align: super; margin-left: 1px; } .tag-mo-mon { font-size: 0.6em; color: #546e7a; font-weight: normal; margin-left: 2px;}
+    .hanh-kim { color: #455a64; } .hanh-moc { color: #1b5e20; } .hanh-thuy { color: #01579b; } .hanh-hoa { color: #b71c1c; } .hanh-tho { color: #4e342e; } 
     .tu-tru-box { background-color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
     .tu-tru-item { font-size: 1.1em; font-weight: bold; }
     .tu-tru-label { font-size: 0.7em; color: #777; text-transform: uppercase; }
-
-    @media only screen and (max-width: 600px) {
-        .cung-box { height: 120px; }
-        .tinh-vi, .can-thien-ban, .can-dia-ban { font-size: 0.8em; }
-        .mon-vi { font-size: 0.9em; }
-        .than-vi { font-size: 0.7em; }
-    }
+    @media only screen and (max-width: 600px) { .cung-box { height: 130px; } .tinh-vi, .can-thien-ban, .can-dia-ban { font-size: 0.8em; } .mon-vi { font-size: 0.9em; bottom: 28px; } .can-dia-ban { bottom: 28px; } .tag-container-dia { bottom: 42px; } .dia-chi-container { height: 20px; font-size: 0.65em; } }
 </style>
 """, unsafe_allow_html=True)
 
 
-# 3. HÀM HỖ TRỢ
-def lay_class_mau(ten_thanh_phan):
-    if not ten_thanh_phan: return ""
-    kim = ["Tâm", "Trụ", "Khai", "Kinh", "Canh", "Tân", "Thân", "Dậu", "Càn", "Đoài", "Kim"]
-    moc = ["Xung", "Phụ", "Thương", "Đỗ", "Giáp", "Ất", "Dần", "Mão", "Chấn", "Tốn", "Mộc"]
-    thuy = ["Bồng", "Hưu", "Nhâm", "Quý", "Hợi", "Tý", "Khảm", "Thủy"]
-    hoa = ["Anh", "Cảnh", "Bính", "Đinh", "Tỵ", "Ngọ", "Ly", "Hỏa"]
-    tho = ["Nhuế", "Cầm", "Nhậm", "Sinh", "Tử", "Mậu", "Kỷ", "Thìn", "Tuất", "Sửu", "Mùi", "Khôn", "Cấn", "Trung", "Thổ"]
-
-    ten_goc = ten_thanh_phan.split("/")[0].strip()
-    if ten_goc in kim: return "hanh-kim"
-    if ten_goc in moc: return "hanh-moc"
-    if ten_goc in thuy: return "hanh-thuy"
-    if ten_goc in hoa: return "hanh-hoa"
-    if ten_goc in tho: return "hanh-tho"
-    return ""
+# ... (Hàm lay_class_mau, lay_bg_cung, xu_ly_don_giap, tao_tag_tu_tru GIỮ NGUYÊN) ...
+# COPY LẠI CÁC HÀM NÀY TỪ BÀI TRƯỚC
+def lay_class_mau(ten):
+    if not ten: return ""
+    ten = ten.split("/")[0].strip()
+    if ten in ["Tâm", "Trụ", "Khai", "Kinh", "Canh", "Tân", "Thân", "Dậu", "Càn", "Đoài"]: return "hanh-kim"
+    if ten in ["Xung", "Phụ", "Thương", "Đỗ", "Giáp", "Ất", "Dần", "Mão", "Chấn", "Tốn"]: return "hanh-moc"
+    if ten in ["Bồng", "Hưu", "Nhâm", "Quý", "Hợi", "Tý", "Khảm"]: return "hanh-thuy"
+    if ten in ["Anh", "Cảnh", "Bính", "Đinh", "Tỵ", "Ngọ", "Ly"]: return "hanh-hoa"
+    return "hanh-tho"
 
 
-def lay_bg_cung(cung_id):
-    if cung_id == 1: return "bg-thuy"
-    if cung_id in [3, 4]: return "bg-moc"
-    if cung_id == 9: return "bg-hoa"
-    if cung_id in [2, 5, 8]: return "bg-tho"
-    if cung_id in [6, 7]: return "bg-kim"
-    return ""
+def lay_bg_cung(id):
+    return {1: "bg-thuy", 9: "bg-hoa", 3: "bg-moc", 4: "bg-moc", 6: "bg-kim", 7: "bg-kim"}.get(id, "bg-tho")
 
 
-def xu_ly_don_giap(can_chi_str):
-    parts = can_chi_str.split()
-    can, chi = parts[0], parts[1]
-    if can == "Giáp":
-        return {"Tý": "Mậu", "Tuất": "Kỷ", "Thân": "Canh", "Ngọ": "Tân", "Thìn": "Nhâm", "Dần": "Quý"}.get(chi, can)
-    return can
+def xu_ly_don_giap(cc):
+    p = cc.split()
+    if p[0] == "Giáp": return {"Tý": "Mậu", "Tuất": "Kỷ", "Thân": "Canh", "Ngọ": "Tân", "Thìn": "Nhâm",
+                               "Dần": "Quý"}.get(p[1], p[0])
+    return p[0]
 
 
-def tao_tag_tu_tru(can_tai_cung, tu_tru_dict):
-    if not can_tai_cung: return ""
-    html_tags = ""
-    cac_can = can_tai_cung.split('/')
-    for c in cac_can:
+def tao_tag_tu_tru(can, tu_tru):
+    if not can: return ""
+    h = ""
+    for c in can.split('/'):
         c = c.strip()
-        if c == tu_tru_dict.get('Y'): html_tags += '<div class="tag-can tag-y">Y</div>'
-        if c == tu_tru_dict.get('M'): html_tags += '<div class="tag-can tag-m">M</div>'
-        if c == tu_tru_dict.get('D'): html_tags += '<div class="tag-can tag-d">D</div>'
-        if c == tu_tru_dict.get('H'): html_tags += '<div class="tag-can tag-h">H</div>'
-    return html_tags
+        if c == tu_tru['Y']: h += '<div class="tag-can tag-y">Y</div>'
+        if c == tu_tru['M']: h += '<div class="tag-can tag-m">M</div>'
+        if c == tu_tru['D']: h += '<div class="tag-can tag-d">D</div>'
+        if c == tu_tru['H']: h += '<div class="tag-can tag-h">H</div>'
+    return h
 
 
-def render_cung_html_string(data, cung_id, ten_cung_bat_quai, tu_tru_dict):
+# --- HÀM RENDER ĐỊA CHI VỚI 2 LOẠI TUẦN KHÔNG ---
+def render_vong_dia_chi(cung_id, tk_nhat, tk_thoi, dich_ma_chi):
+    if cung_id == 5: return '<div class="dia-chi-container"></div>'
+    map_cung_chi = {1: ["Tý"], 8: ["Sửu", "Dần"], 3: ["Mão"], 4: ["Thìn", "Tỵ"], 9: ["Ngọ"], 2: ["Mùi", "Thân"],
+                    7: ["Dậu"], 6: ["Tuất", "Hợi"]}
+
+    ds_chi = map_cung_chi.get(cung_id, [])
+    html = ""
+    for chi in ds_chi:
+        badges = ""
+        # Check Nhật Không
+        if chi in tk_nhat: badges += '<span class="badge-tk-n">TK(N)</span>'
+        # Check Thời Không
+        if chi in tk_thoi: badges += '<span class="badge-tk-g">TK(G)</span>'
+        # Check Dịch Mã
+        if chi == dich_ma_chi: badges += '<span class="badge-ma">MÃ</span>'
+
+        cls_op = "badge-normal" if badges == "" else ""
+        cls_col = lay_class_mau(chi)
+        html += f'<div class="chi-item {cls_op}"><span class="{cls_col}">{chi}</span>{badges}</div>'
+
+    just = "center" if len(ds_chi) == 1 else "space-between"
+    return f'<div class="dia-chi-container" style="justify-content:{just};">{html}</div>'
+
+
+def render_cung_html_string(data, cung_id, ten_cung, tu_tru, tk_nhat, tk_thoi, dich_ma):
     if not data: return ""
-
-    thien = data['Thien'] or ""
-    dia = data['Dia'] or ""
-    sao = data['Sao'] or ""
-    cua = data['Cua'] or ""
-    than = data['Than'] or ""
+    thien, dia = data['Thien'] or "", data['Dia'] or ""
+    sao, cua, than = data['Sao'] or "", data['Cua'] or "", data['Than'] or ""
     pt = data.get('PhanTich', {})
 
-    is_tk = pt.get('TuanKhong', False)
-    is_ma = pt.get('DichMa', False)
-    vuong_suy_sao = pt.get('VuongSuyThang', "")
-    ts_thien = pt.get('TruongSinh', '')
-    is_mon_mo = pt.get('MonNhapMo', False)
+    # Render các thành phần
+    tag_thien = tao_tag_tu_tru(thien, tu_tru)
 
-    tag_thien = tao_tag_tu_tru(thien, tu_tru_dict)
+    vs = pt.get('VuongSuyThang', "")
+    html_vs = f'<div style="font-size:0.7em; color:#888;">({vs})</div>' if vs else ""
 
-    html_sao_status = f'<div style="font-size:0.7em; color:#888; font-weight:normal;">({vuong_suy_sao})</div>' if vuong_suy_sao else ""
-    html_mo_thien = f'<span class="tag-mo">({ts_thien})</span>'
-    html_mo_mon = '<span class="tag-mo-mon">[Mộ]</span>' if is_mon_mo else ''
+    mo_thien = f'<span class="tag-mo">{pt.get('TruongSinh')}</span>'
+    mo_mon = '<span class="tag-mo-mon">[Mộ]</span>' if pt.get('MonNhapMo') else ''
 
-    html_tk = '<div class="tag-tk">TK</div>' if is_tk else ''
-    html_ma = '<div class="tag-ma">MÃ</div>' if is_ma else ''
+    html_chi = render_vong_dia_chi(cung_id, tk_nhat, tk_thoi, dich_ma)
 
-    cls_sao = lay_class_mau(sao)
-    cls_cua = lay_class_mau(cua)
-    cls_thien = lay_class_mau(thien)
-    cls_dia = lay_class_mau(dia)
+    # Class màu
+    cls_s = lay_class_mau(sao);
+    cls_c = lay_class_mau(cua)
+    cls_t = lay_class_mau(thien);
+    cls_d = lay_class_mau(dia)
     cls_bg = lay_bg_cung(cung_id)
 
-    # QUAN TRỌNG: Viết HTML sát lề, không thụt dòng trong f-string
     return f"""
 <div class="cung-box {cls_bg}">
-    <div class="cung-so">{ten_cung_bat_quai}</div>
+    <div class="cung-so">{ten_cung}</div>
     <div class="than-vi hanh-hoa">{than}</div>
-    <div class="tinh-vi {cls_sao}">{sao}{html_sao_status}</div>
-    <div class="mon-vi {cls_cua}">{cua}{html_mo_mon}</div>
-    <div class="can-thien-ban {cls_thien}">{thien}{html_mo_thien}</div>
+    <div class="tinh-vi {cls_s}">{sao}{html_vs}</div>
+    <div class="mon-vi {cls_c}">{cua}{mo_mon}</div>
+    <div class="can-thien-ban {cls_t}">{thien}{mo_thien}</div>
     <div class="tag-container-thien">{tag_thien}</div>
-    <div class="can-dia-ban {cls_dia}">{dia}</div>
-    <div class="special-tags">{html_tk}{html_ma}</div>
+    <div class="can-dia-ban {cls_d}">{dia}</div>
+    {html_chi}
 </div>
 """
 
 
-# 4. GIAO DIỆN CHÍNH
 def main():
     st.title("🔮 Kỳ Môn Độn Giáp - Trương Chí Xuân")
-
     with st.sidebar:
         st.header("1. Nhập Thời Gian")
         tz_vn = pytz.timezone('Asia/Ho_Chi_Minh')
         now = datetime.now(tz_vn)
-
         c1, c2, c3 = st.columns(3)
-        with c1: day = st.number_input("Ngày", 1, 31, now.day)
-        with c2: month = st.number_input("Tháng", 1, 12, now.month)
-        with c3: year = st.number_input("Năm", 1900, 2100, now.year)
-
+        with c1: d = st.number_input("Ngày", 1, 31, now.day)
+        with c2: m = st.number_input("Tháng", 1, 12, now.month)
+        with c3: y = st.number_input("Năm", 1900, 2100, now.year)
         c4, c5 = st.columns(2)
-        with c4: hour = st.number_input("Giờ", 0, 23, now.hour)
-        with c5: minute = st.number_input("Phút", 0, 59, now.minute)
+        with c4: h = st.number_input("Giờ", 0, 23, now.hour)
+        with c5: mi = st.number_input("Phút", 0, 59, now.minute)
+        btn = st.button("Lập Trận Đồ", type="primary")
 
-        btn_lap = st.button("Lập Trận Đồ", type="primary", use_container_width=True)
-
-    if btn_lap:
+    if btn:
         try:
-            valid_date = datetime(year, month, day, hour, minute)
-        except ValueError:
-            st.error("Ngày tháng không hợp lệ!")
-            return
+            dt = datetime(y, m, d, h, mi)
+        except:
+            st.error("Ngày không hợp lệ"); return
 
         km = KyMonLapTran()
-        kq = km.lap_que(year, month, day, hour, minute)
+        # Gọi lập quẻ (Logic mới đã xử lý đổi ngày giờ Tý)
+        kq = km.lap_que(y, m, d, h, mi)
 
-        if isinstance(kq, str):
-            st.error(kq)
-            return
-
-        info_lich = km.lich.get_lunar_date(day, month, year)
-        lday, lmonth, lyear, _ = info_lich
-        cc_full = km.lich.get_can_chi(day, month, year, lmonth, lyear, hour=hour)
+        # --- LẤY TỨ TRỤ CHUẨN TỪ KẾT QUẢ TRẢ VỀ ---
+        # (Không gọi lại km.lich.get_can_chi nữa vì nó tính theo âm lịch thường)
+        cc = kq['TuTru']
 
         tu_tru_dict = {
-            'Y': xu_ly_don_giap(cc_full['Nam']),
-            'M': xu_ly_don_giap(cc_full['Thang']),
-            'D': xu_ly_don_giap(cc_full['Ngay']),
-            'H': xu_ly_don_giap(cc_full['Gio'])
+            'Y': xu_ly_don_giap(cc['Nam']),
+            'M': xu_ly_don_giap(cc['Thang']),
+            'D': xu_ly_don_giap(cc['Ngay']),
+            'H': xu_ly_don_giap(cc['Gio'])
         }
 
+        tiet = kq['CanChi'].split('|')[-1].replace('Tiết ', '').strip()
+
+        tk_nhat = kq['InfoTuanKhong']['Nhat']
+        tk_thoi = kq['InfoTuanKhong']['Thoi']
+        dich_ma = km.tim_dich_ma(cc['Gio'].split()[1])
+
+        # Header Hiển thị
         st.markdown(f"""
-        <div class="tu-tru-box">
-            <div style="display: flex; justify-content: space-around;">
-                <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(cc_full['Nam'].split()[0])}">{cc_full['Nam']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['Y']})</span></div></div>
-                <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(cc_full['Thang'].split()[0])}">{cc_full['Thang']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['M']})</span></div></div>
-                <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(cc_full['Ngay'].split()[0])}">{cc_full['Ngay']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['D']})</span></div></div>
-                <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc_full['Gio'].split()[0])}">{cc_full['Gio']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['H']})</span></div></div>
-            </div>
-            <div style="margin-top: 10px; font-size: 1em; color: #333; text-align: center;">
-                <b>{kq['CanChi'].split('|')[-1].replace('Tiết ', '').strip()}</b> &bull; 
-                <b>{kq['ThongTinCuc']}</b> &bull; 
-                Tuần Thủ: <b>{kq['TuanThu']}</b> &bull; 
-                {kq['TrucPhuSu']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+                <div class="tu-tru-box">
+                    <div style="display: flex; justify-content: space-around;">
+                        <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(cc['Nam'].split()[0])}">{cc['Nam']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['Y']})</span></div></div>
+                        <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(cc['Thang'].split()[0])}">{cc['Thang']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['M']})</span></div></div>
+                        <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(cc['Ngay'].split()[0])}">{cc['Ngay']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['D']})</span></div></div>
+                        <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc['Gio'].split()[0])}">{cc['Gio']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['H']})</span></div></div>
+                    </div>
+                    <div style="margin-top: 10px; text-align: center;color: #000">
+                        <b>{tiet}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq['TuanThu']}</b>
+                    </div>
+                    <div style="font-size: 0.9em; text-align: center; color: #555;">
+                        {kq['TrucPhuSu']}
+                    </div>
+                    <div style="font-size: 0.8em; text-align: center; margin-top: 5px;">
+                        <span class="badge-tk-n">Nhật Không: {', '.join(tk_nhat)}</span>
+                        <span class="badge-tk-g" style="margin-left:10px">Thời Không: {', '.join(tk_thoi)}</span>
+                        <span class="badge-ma" style="margin-left:10px">Mã: {dich_ma}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        # GRID LAYOUT (Render 1 cục HTML)
-        grid_matrix = [[4, 9, 2], [3, 5, 7], [8, 1, 6]]
-        map_ten_cung = {
-            1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4",
-            5: "Trung 5", 6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8", 9: "Ly 9"
-        }
-        data_9_cung = kq['Data9Cung']
-
-        # Tạo chuỗi HTML lớn
+        map_ten = {1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4", 5: "Trung 5", 6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8",
+                   9: "Ly 9"}
         full_html = '<div class="grid-container">'
-        for row in grid_matrix:
-            for cung_id in row:
-                ten_cung = map_ten_cung.get(cung_id)
-                cell_html = render_cung_html_string(data_9_cung.get(cung_id), cung_id, ten_cung, tu_tru_dict)
-                full_html += cell_html
+        for r in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
+            for cid in r:
+                full_html += render_cung_html_string(kq['Data9Cung'].get(cid), cid, map_ten.get(cid), tu_tru_dict, tk_nhat,
+                                                     tk_thoi, dich_ma)
         full_html += '</div>'
-
-        # In ra 1 lần duy nhất
         st.markdown(full_html, unsafe_allow_html=True)
 
 

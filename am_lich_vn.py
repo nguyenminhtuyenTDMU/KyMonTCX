@@ -210,7 +210,7 @@ class AmLichVN:
         return lunar_day, lunar_month_val, lunar_year, is_leap_month
 
     # ==========================================
-    # PHẦN 3: TÍNH CAN CHI (Cập nhật tính Giờ)
+    # PHẦN 3: TÍNH CAN CHI
     # ==========================================
     def get_can_chi(self, dd, mm, yy, lunar_month, lunar_year, hour=0):
         """
@@ -238,7 +238,7 @@ class AmLichVN:
         can_ngay = self.CAN[can_ngay_idx]
         chi_ngay = self.CHI[chi_ngay_idx]
 
-        # 4. Can Chi Giờ (MỚI THÊM)
+        # 4. Can Chi Giờ
         # - Tìm Chi Giờ:
         chi_gio_idx = ((hour + 1) // 2) % 12
 
