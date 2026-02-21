@@ -3,7 +3,7 @@ import textwrap
 from datetime import datetime
 import pytz
 from kymon_logic import KyMonLapTran
-
+import pprint
 # Lưu ý: Thêm CSS cho badge TK Nhật/Thời
 st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
 
@@ -161,7 +161,11 @@ def main():
         km = KyMonLapTran()
         # Gọi lập quẻ (Logic mới đã xử lý đổi ngày giờ Tý)
         kq = km.lap_que(y, m, d, h, mi)
-
+        dict_string = pprint.pformat(kq, indent=4, sort_dicts=False)
+        with st.expander("📋 Xem và Copy Dictionary (Chuẩn Python)"):
+            # language="python" giúp tô màu cú pháp theo chuẩn Python
+            # Nút Copy tự động xuất hiện ở góc trên bên phải
+            st.code(dict_string, language="python")
         # --- LẤY TỨ TRỤ CHUẨN TỪ KẾT QUẢ TRẢ VỀ ---
         # (Không gọi lại km.lich.get_can_chi nữa vì nó tính theo âm lịch thường)
         cc = kq['TuTru']
