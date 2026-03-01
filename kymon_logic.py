@@ -34,7 +34,7 @@ class KyMonLapTran:
         }
 
         # Dữ liệu Cửu Tinh, Bát Môn, Bát Thần... (GIỮ NGUYÊN)
-        self.CUU_TINH = {1: "Bồng", 2: "Nhu", 3: "Xung", 4: "Phụ", 5: "Cầm", 6: "Tâm", 7: "Trụ", 8: "Nhậm", 9: "Anh"}
+        self.CUU_TINH = {1: "Bồng", 2: "Nhuế", 3: "Xung", 4: "Phụ", 5: "Cầm", 6: "Tâm", 7: "Trụ", 8: "Nhậm", 9: "Anh"}
         self.BAT_MON = {1: "Hưu", 2: "Tử", 3: "Thương", 4: "Đỗ", 5: "", 6: "Khai", 7: "Kinh", 8: "Sinh", 9: "Cảnh"}
         self.THU_TU_BAT_MON = ["Hưu", "Sinh", "Thương", "Đỗ", "Cảnh", "Tử", "Kinh", "Khai"]
         self.BAT_THAN = ["Trực Phù", "Đằng Xà", "Thái Âm", "Lục Hợp", "Bạch Hổ", "Huyền Vũ", "Cửu Địa", "Cửu Thiên"]
@@ -53,7 +53,7 @@ class KyMonLapTran:
         }
 
         # Data Ngũ Hành & Trường Sinh (GIỮ NGUYÊN)
-        self.NGU_HANH_SAO = {"Bồng": "Thủy", "Nhu": "Thổ", "Xung": "Mộc", "Phụ": "Mộc", "Cầm": "Thổ", "Tâm": "Kim",
+        self.NGU_HANH_SAO = {"Bồng": "Thủy", "Nhuế": "Thổ", "Xung": "Mộc", "Phụ": "Mộc", "Cầm": "Thổ", "Tâm": "Kim",
                              "Trụ": "Kim", "Nhậm": "Thổ", "Anh": "Hỏa"}
         self.NGU_HANH_CHI = {"Hợi": "Thủy", "Tý": "Thủy", "Dần": "Mộc", "Mão": "Mộc", "Tỵ": "Hỏa", "Ngọ": "Hỏa",
                              "Thân": "Kim", "Dậu": "Kim", "Thìn": "Thổ", "Tuất": "Thổ", "Sửu": "Thổ", "Mùi": "Thổ"}
