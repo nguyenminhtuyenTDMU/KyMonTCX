@@ -1,5 +1,6 @@
 import streamlit as st
 import textwrap
+import streamlit.components.v1 as components
 from datetime import datetime
 import pytz
 from kymon_logic import KyMonLapTran
@@ -151,7 +152,6 @@ def main():
         with c5: mi = st.number_input("Phút", 0, 59, now.minute)
         btn = st.button("Lập Trận Đồ", type="primary")
         text_ld = st.text_area("lý do")
-
     if btn:
         try:
             dt = datetime(y, m, d, h, mi)
@@ -218,7 +218,27 @@ def main():
                                                      tk_thoi, dich_ma)
         full_html += '</div>'
         st.markdown(full_html, unsafe_allow_html=True)
+        # --- NÚT LẤY SỐ ĐỘC LẬP (KHÔNG LOAD LẠI TRANG) ---
+    st.markdown("---")
 
+    components.html(
+        """
+        <button onclick="laySo()" style="width:100%; padding:10px 15px; background-color:#ff4b4b; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer; font-family:sans-serif; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            🎯 LẤY SỐ TỎA CUNG (Giây hiện tại)
+        </button>
+        <div id="kq" style="margin-top:12px; text-align:center; font-family:sans-serif; color:#31333F; font-size:15px;"></div>
+
+        <script>
+            const mapCung = {1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4", 5: "Trung 5", 6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8", 9: "Ly 9"};
+            function laySo() {
+                let s = new Date().getSeconds();
+                let cung = s % 9 || 9; // Chia 9 lấy dư, nếu dư 0 thì là cung 9
+                document.getElementById('kq').innerHTML = "Giây <b>" + s + "</b> ➔ Ứng vào: <b><span style='color:#d32f2f; font-size:18px;'>" + mapCung[cung] + "</span></b>";
+            }
+        </script>
+        """,
+        height=90
+    )
 
 if __name__ == "__main__":
     main()

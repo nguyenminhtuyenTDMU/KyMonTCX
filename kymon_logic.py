@@ -523,6 +523,3 @@ class KyMonLapTran:
                 "MonNhapMo": is_mon_nhap_mo
             }
         return ket_qua_lap_que
-
-t = KyMonLapTran()
-print(t.lap_que(2026,2,16,23,30))
