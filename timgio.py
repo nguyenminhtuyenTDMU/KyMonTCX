@@ -6,7 +6,7 @@ from kymon_logic import KyMonLapTran
 # =========================================================
 
 # Danh sách cung bạn muốn quét (Ví dụ: [3] cho Chấn, hoặc [2, 3, 4, 8] cho các cung cát)
-DANH_SACH_CUNG_CAN_TIM = [3,4,6,7]
+DANH_SACH_CUNG_CAN_TIM = [3]
 
 # Mapping Cung -> Địa chi (Để check Không Vong Thời)
 CUNG_CHI = {
@@ -42,7 +42,7 @@ def tinh_diem_cat(thien, dia, sao, than, cua):
     if any(t in than for t in ["Trực Phù", "Lục Hợp", "Cửu Thiên", "Thái Âm"]): diem += 2
 
     # Cát Môn (Hưu, Sinh, Khai)
-    if any(m in cua for m in ["Hưu", "Sinh", "Khai"]): diem += 4
+    if any(m in cua for m in ["Hưu", "Sinh", "Khai","Cảnh"]): diem += 4
 
     return diem
 
@@ -63,7 +63,7 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     # --- ĐIỀU KIỆN CỨNG (HARD CRITERIA) ---
 
     # 1. Bắt buộc: Cảnh Môn + Trực Phù (Có thể đổi tùy mục đích)
-    if cua != 'Hưu':
+    if cua != 'Cảnh' or than != 'Trực Phù':
         return False
 
     # 2. Loại trừ Hung Thần/Hung Tinh
