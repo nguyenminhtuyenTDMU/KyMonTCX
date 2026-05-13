@@ -1,6 +1,9 @@
 # api.py
 
-from datetime import datetime
+from copy import deepcopy
+from datetime import datetime, timedelta
+from functools import lru_cache
+from time import perf_counter
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +22,25 @@ app.add_middleware(
 km = KyMonLapTran()
 
 
+@lru_cache(maxsize=2048)
+def cached_lap_que(y: int, m: int, d: int, h: int, mi: int):
+    return km.lap_que(y, m, d, h, mi)
+
+
+def validate_datetime(y: int, m: int, d: int, h: int, mi: int):
+    try:
+        return datetime(y, m, d, h, mi)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Ngày giờ không hợp lệ: {exc}")
+
+
+def parse_iso_datetime(value: str, name: str):
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"{name} không phải ISO datetime hợp lệ: {exc}")
+
+
 @app.get("/")
 def root():
     return {
@@ -27,7 +49,12 @@ def root():
     }
 
 
-@app.get("/qimen")
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/qimen", operation_id="lapTranKyMon")
 def qimen(
     y: int = Query(..., ge=1900, le=2100),
     m: int = Query(..., ge=1, le=12),
@@ -39,14 +66,51 @@ def qimen(
     Ví dụ:
     /qimen?y=2026&m=6&d=17&h=8&mi=1
     """
-    try:
-        datetime(y, m, d, h, mi)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=f"Ngày giờ không hợp lệ: {exc}")
+    validate_datetime(y, m, d, h, mi)
 
+    start_time = perf_counter()
     try:
-        return km.lap_que(y, m, d, h, mi)
+        result = deepcopy(cached_lap_que(y, m, d, h, mi))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Dữ liệu ngày giờ không hợp lệ: {exc}")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+    result["_meta"] = {"elapsed_seconds": perf_counter() - start_time}
+    return result
+
+
+@app.get("/qimen/range", operation_id="lapTranKyMonRange")
+def qimen_range(
+    start: str = Query(..., description="ISO datetime, ví dụ 2026-06-17T07:00"),
+    end: str = Query(..., description="ISO datetime, ví dụ 2026-06-17T19:00"),
+    step_hours: int = Query(2, ge=1, le=12),
+):
+    start_dt = parse_iso_datetime(start, "start")
+    end_dt = parse_iso_datetime(end, "end")
+
+    if start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="start phải nhỏ hơn hoặc bằng end")
+
+    items = []
+    current = start_dt
+    step = timedelta(hours=step_hours)
+
+    try:
+        while current <= end_dt:
+            validate_datetime(current.year, current.month, current.day, current.hour, current.minute)
+            data = deepcopy(cached_lap_que(current.year, current.month, current.day, current.hour, current.minute))
+            items.append({
+                "input": current.isoformat(timespec="minutes"),
+                "data": data,
+            })
+            current += step
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Dữ liệu ngày giờ không hợp lệ: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {
+        "count": len(items),
+        "items": items,
+    }
