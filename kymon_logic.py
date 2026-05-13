@@ -1,10 +1,10 @@
 # kymon_logic.py
-from am_lich_vn import AmLichVN
+from calendar_provider import CachedCalendarProvider
 from datetime import timedelta, datetime
 
 class KyMonLapTran:
-    def __init__(self):
-        self.lich = AmLichVN()
+    def __init__(self, lich_provider=None):
+        self.lich = lich_provider or CachedCalendarProvider()
 
         self.THIEN_CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"]
         self.DIA_CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"]

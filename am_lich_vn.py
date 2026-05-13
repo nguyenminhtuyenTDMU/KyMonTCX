@@ -11,10 +11,16 @@ class AmLichVN:
         # 1. Khởi tạo Skyfield
         try:
             self.ts = load.timescale()
-            self.eph = load('de421.bsp')
+            try:
+                self.eph = load('de440s.bsp')
+            except:
+                self.eph = load('de421.bsp')
         except:
-            print("Đang tải dữ liệu de421.bsp...")
-            self.eph = load('de421.bsp')
+            print("Đang tải dữ liệu thiên văn...")
+            try:
+                self.eph = load('de440s.bsp')
+            except:
+                self.eph = load('de421.bsp')
             self.ts = load.timescale()
 
         self.sun = self.eph['sun']
