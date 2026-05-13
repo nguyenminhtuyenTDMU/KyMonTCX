@@ -3,13 +3,20 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
 from functools import lru_cache
+from os import getenv
 from time import perf_counter
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from kymon_logic import KyMonLapTran
 
-app = FastAPI(title="KyMonTCX API", version="1.0.0")
+api_base_url = getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
+
+app = FastAPI(
+    title="KyMonTCX API",
+    version="1.0.0",
+    servers=[{"url": api_base_url}],
+)
 
 app.add_middleware(
     CORSMiddleware,
