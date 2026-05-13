@@ -1,5 +1,5 @@
 import streamlit as st
-import textwrap
+import json
 import streamlit.components.v1 as components
 from datetime import datetime
 import pytz
@@ -162,6 +162,17 @@ def main():
         # Gọi lập quẻ (Logic mới đã xử lý đổi ngày giờ Tý)
         kq = km.lap_que(y, m, d, h, mi)
         dict_string = pprint.pformat(kq, indent=4, sort_dicts=False)
+        json_string = json.dumps(kq, ensure_ascii=False, indent=2)
+
+        st.download_button(
+            label="⬇️ Tải JSON trận",
+            data=json_string,
+            file_name=f"ky_mon_{y}_{m}_{d}_{h}_{mi}.json",
+            mime="application/json"
+        )
+
+        with st.expander("📋 Xem và Copy JSON"):
+            st.code(json_string, language="json")
         with st.expander("📋 Xem và Copy Dictionary (Chuẩn Python)"):
             # language="python" giúp tô màu cú pháp theo chuẩn Python
             # Nút Copy tự động xuất hiện ở góc trên bên phải

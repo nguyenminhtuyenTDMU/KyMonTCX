@@ -329,6 +329,36 @@ class KyMonLapTran:
         idx_kk1 = (diff - 1) % 12
         idx_kk2 = (diff - 2) % 12
         return [self.DIA_CHI[idx_kk2], self.DIA_CHI[idx_kk1]]
+    
+    def doi_giap_sang_nghi_an(self, can, can_tuan_thu):
+        # Trong Kỳ Môn, thời can Giáp không hiện trực tiếp trên bàn mà ẩn dưới lục nghi.
+        if can == "Giáp":
+            return can_tuan_thu
+        return can
+
+    def tim_cung_theo_can(self, data9cung, can_tim):
+        if not can_tim:
+            return None
+        for cid, data in data9cung.items():
+            thien = data.get("Thien", "") or ""
+            dia = data.get("Dia", "") or ""
+            ds_thien = [x.strip() for x in thien.split("/") if x.strip()]
+            if can_tim in ds_thien or can_tim == dia:
+                return cid
+        return None
+
+    def tim_cung_theo_cua(self, data9cung, cua_tim):
+        if not cua_tim:
+            return None
+        for cid, data in data9cung.items():
+            if data.get("Cua") == cua_tim:
+                return cid
+        return None
+
+    def cung_co_chi_trong_ds(self, cung_id, ds_chi):
+        if cung_id is None:
+            return False
+        return any(chi in ds_chi for chi in self.CUNG_TO_CHI.get(cung_id, []))
 
     def lap_que(self, nam, thang, ngay, gio, phut):
         dt_tinh, gio_tinh = self.xu_ly_gio_ty(nam, thang, ngay, gio, phut)
@@ -399,6 +429,49 @@ class KyMonLapTran:
         }
 
         ket_qua_full = self.phan_tich_bo_sung(ket_qua, chi_thang_tk)
+        data9 = ket_qua_full["Data9Cung"]
+        thoi_can_hien = self.doi_giap_sang_nghi_an(can_gio, can_tuan_thu)
+
+        ket_qua_full["Maps"] = {
+            "NhatCan": can_ngay,
+            "NhatChi": chi_ngay,
+            "ThoiCan": can_gio,
+            "ThoiChi": chi_gio,
+            "ThoiCanHien": thoi_can_hien,
+            "TuanThu": ten_tuan,
+            "GiapAnNghi": can_tuan_thu if can_gio == "Giáp" else None,
+            "NhatCanCung": self.tim_cung_theo_can(data9, can_ngay),
+            "ThoiCanCung": self.tim_cung_theo_can(data9, thoi_can_hien),
+            "KhaiMonCung": self.tim_cung_theo_cua(data9, "Khai"),
+            "SinhMonCung": self.tim_cung_theo_cua(data9, "Sinh"),
+            "HuuMonCung": self.tim_cung_theo_cua(data9, "Hưu"),
+        }
+
+        ket_qua_full["HiddenStems"] = {
+            "Giáp Tý": "Mậu",
+            "Giáp Tuất": "Kỷ",
+            "Giáp Thân": "Canh",
+            "Giáp Ngọ": "Tân",
+            "Giáp Thìn": "Nhâm",
+            "Giáp Dần": "Quý",
+            "Current": {
+                "Tuan": ten_tuan,
+                "Nghi": can_tuan_thu
+            }
+        }
+
+        maps = ket_qua_full["Maps"]
+        ket_qua_full["Flags"] = {
+            "NhatCanCungNhatKhong": self.cung_co_chi_trong_ds(maps["NhatCanCung"], tk_nhat),
+            "NhatCanCungThoiKhong": self.cung_co_chi_trong_ds(maps["NhatCanCung"], tk_thoi),
+            "ThoiCanCungNhatKhong": self.cung_co_chi_trong_ds(maps["ThoiCanCung"], tk_nhat),
+            "ThoiCanCungThoiKhong": self.cung_co_chi_trong_ds(maps["ThoiCanCung"], tk_thoi),
+            "KhaiMonCungNhatKhong": self.cung_co_chi_trong_ds(maps["KhaiMonCung"], tk_nhat),
+            "KhaiMonCungThoiKhong": self.cung_co_chi_trong_ds(maps["KhaiMonCung"], tk_thoi),
+            "SinhMonCungNhatKhong": self.cung_co_chi_trong_ds(maps["SinhMonCung"], tk_nhat),
+            "SinhMonCungThoiKhong": self.cung_co_chi_trong_ds(maps["SinhMonCung"], tk_thoi),
+        }
+
         return ket_qua_full
 
     def phan_tich_bo_sung(self, ket_qua_lap_que, chi_thang):

@@ -4,9 +4,13 @@ from kymon_logic import KyMonLapTran
 # =========================================================
 # 1. CẤU HÌNH QUY TẮC PHONG THỦY (DỄ DÀNG CHỈNH SỬA)
 # =========================================================
+START_YEAR = 2026
+START_MONTH = 5
+START_DAY =7
+START_HOUR = 1
+START_MINUTE = 0
 
-# Danh sách cung bạn muốn quét (Ví dụ: [3] cho Chấn, hoặc [2, 3, 4, 8] cho các cung cát)
-DANH_SACH_CUNG_CAN_TIM = [3]
+DANH_SACH_CUNG_CAN_TIM = [7]
 
 # Mapping Cung -> Địa chi (Để check Không Vong Thời)
 CUNG_CHI = {
@@ -28,7 +32,7 @@ MAP_TEN_CUNG = {
 
 # =========================================================
 # 2. HÀM TÍNH ĐIỂM CÁT (SCORE ENGINE)
-# =========================================================gksdugojksdhjflkgjl
+# =========================================================
 def tinh_diem_cat(thien, dia, sao, than, cua):
     diem = 0
     # Tam Kỳ (Ất, Bính, Đinh)
@@ -63,7 +67,7 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     # --- ĐIỀU KIỆN CỨNG (HARD CRITERIA) ---
 
     # 1. Bắt buộc: Cảnh Môn + Trực Phù (Có thể đổi tùy mục đích)
-    if cua != 'Cảnh' or than != 'Trực Phù':
+    if cua != 'Hưu':
         return False
 
     # 2. Loại trừ Hung Thần/Hung Tinh
@@ -85,7 +89,7 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
 
     # --- ĐIỀU KIỆN ĐIỂM (SOFT CRITERIA) ---
     # Bật dòng dưới nếu muốn lọc quẻ có điểm cát cao (ví dụ >= 6)
-    if tinh_diem_cat(thien, dia, sao, than, cua) < 6: return False
+    # if tinh_diem_cat(thien, dia, sao, than, cua) < 6: return False
 
     return True
 
@@ -97,7 +101,7 @@ def tim_tran_phu_hop():
     print("--- KHỞI TẠO MÁY QUÉT KỲ MÔN ---")
     km = KyMonLapTran()
 
-    now = datetime.datetime.now()
+    now = datetime.datetime(START_YEAR, START_MONTH, START_DAY, START_HOUR, START_MINUTE)
     # Căn chỉnh giờ lẻ (canh giờ)
     hour_aligned = now.hour if now.hour % 2 != 0 else now.hour - 1
     if hour_aligned < 0:
