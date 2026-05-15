@@ -108,7 +108,7 @@ def render_cung_html_string(data, cung_id, ten_cung, tu_tru, tk_nhat, tk_thoi, d
     # Render các thành phần
     tag_thien = tao_tag_tu_tru(thien, tu_tru)
 
-    vs = pt.get('VuongSuyThang', "")
+    vs = pt.get('VuongSuyCung') or pt.get('VuongSuyThang', "")
     html_vs = f'<div style="font-size:0.7em; color:#888;">({vs})</div>' if vs else ""
 
     mo_thien = f'<span class="tag-mo">{pt.get('TruongSinh')}</span>'

@@ -5,12 +5,12 @@ from kymon_logic import KyMonLapTran
 # 1. CẤU HÌNH QUY TẮC PHONG THỦY (DỄ DÀNG CHỈNH SỬA)
 # =========================================================
 START_YEAR = 2026
-START_MONTH = 5
-START_DAY =7
+START_MONTH = 4
+START_DAY =1
 START_HOUR = 1
 START_MINUTE = 0
 
-DANH_SACH_CUNG_CAN_TIM = [7]
+DANH_SACH_CUNG_CAN_TIM = [3]
 
 # Mapping Cung -> Địa chi (Để check Không Vong Thời)
 CUNG_CHI = {
@@ -36,8 +36,8 @@ MAP_TEN_CUNG = {
 def tinh_diem_cat(thien, dia, sao, than, cua):
     diem = 0
     # Tam Kỳ (Ất, Bính, Đinh)
-    if any(k in thien for k in ["Ất", "Bính", "Đinh"]): diem += 1
-    if any(k in dia for k in ["Ất", "Bính", "Đinh"]): diem += 1
+    # if any(k in thien for k in ["Ất", "Bính", "Đinh"]): diem += 1
+    # if any(k in dia for k in ["Ất", "Bính", "Đinh"]): diem += 1
 
     # Cát Tinh (Nhậm, Phụ, Tâm)
     if any(s in sao for s in ["Nhậm", "Phụ", "Tâm"]): diem += 2
@@ -67,7 +67,7 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     # --- ĐIỀU KIỆN CỨNG (HARD CRITERIA) ---
 
     # 1. Bắt buộc: Cảnh Môn + Trực Phù (Có thể đổi tùy mục đích)
-    if cua != 'Hưu':
+    if cua != 'Hưu' or sao!="Phụ":
         return False
 
     # 2. Loại trừ Hung Thần/Hung Tinh
@@ -89,7 +89,7 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
 
     # --- ĐIỀU KIỆN ĐIỂM (SOFT CRITERIA) ---
     # Bật dòng dưới nếu muốn lọc quẻ có điểm cát cao (ví dụ >= 6)
-    # if tinh_diem_cat(thien, dia, sao, than, cua) < 6: return False
+    if tinh_diem_cat(thien, dia, sao, than, cua) < 8: return False
 
     return True
 
