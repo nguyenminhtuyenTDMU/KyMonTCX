@@ -312,11 +312,11 @@ class KyMonLapTran:
         hanh_sao = self.NGU_HANH_SAO.get(ten_sao)
         hanh_cung = self.NGU_HANH_CUNG.get(cung_id)
         if not hanh_sao or not hanh_cung: return ""
-        if hanh_sao == hanh_cung: return "Tướng"
-        if self.QUY_TAC_NGU_HANH[hanh_sao]["Sinh"] == hanh_cung: return "Vượng"
+        if hanh_sao == hanh_cung: return "Vượng"
+        if self.QUY_TAC_NGU_HANH[hanh_sao]["Sinh"] == hanh_cung: return "Hưu"
         if self.QUY_TAC_NGU_HANH[hanh_cung]["Sinh"] == hanh_sao: return "Phế"
         if self.QUY_TAC_NGU_HANH[hanh_cung]["Khắc"] == hanh_sao: return "Tù"
-        if self.QUY_TAC_NGU_HANH[hanh_sao]["Khắc"] == hanh_cung: return "Hưu"
+        if self.QUY_TAC_NGU_HANH[hanh_sao]["Khắc"] == hanh_cung: return "Tướng"
         return ""
 
     def tim_dich_ma(self, chi_gio):
