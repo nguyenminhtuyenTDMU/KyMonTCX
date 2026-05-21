@@ -288,10 +288,9 @@ def lap_nguyet_gia(year: int, month: int, day: int,
     lich = lich or CachedCalendarProvider()
     am_duong = -1
 
-    nguyen, cuc_so = xac_dinh_cuc_nguyet_gia(year)
-
     # Can chi năm tiết khí chứa ngày hỏi
     solar_yr = solar_year_of_date(year, month, day, lich)
+    nguyen, cuc_so = xac_dinh_cuc_nguyet_gia(solar_yr)
     can_nam, _ = tinh_can_chi_nam_tiet_khi(solar_yr)
 
     # Tiết khí hiện tại → chi tháng tiết khí
@@ -334,21 +333,13 @@ def lap_nguyet_gia(year: int, month: int, day: int,
 
 MAP_CUC_TIET_KHI = {
     "Đông Chí": ([1, 7, 4], 1), "Tiểu Hàn": ([2, 8, 5], 1), "Đại Hàn": ([3, 9, 6], 1),
-    "Lập Xuân": ([8, 5, 2], 1), "Vũ Thủy": ([9, 6, 3], 1), "Kinh Trập": ([1, 7, 4], 1),
+    "Lập Xuân": ([8, 5, 2], 1), "Vũ Thủy": ([9, 6, 3], 1), "Kinh Trập": ([8, 5, 2], 1),
     "Xuân Phân": ([3, 9, 6], 1), "Thanh Minh": ([4, 1, 7], 1), "Cốc Vũ": ([5, 2, 8], 1),
     "Lập Hạ": ([4, 1, 7], 1), "Tiểu Mãn": ([5, 2, 8], 1), "Mang Chủng": ([6, 3, 9], 1),
     "Hạ Chí": ([9, 3, 6], -1), "Tiểu Thử": ([8, 2, 5], -1), "Đại Thử": ([7, 1, 4], -1),
     "Lập Thu": ([2, 5, 8], -1), "Xử Thử": ([1, 4, 7], -1), "Bạch Lộ": ([9, 3, 6], -1),
     "Thu Phân": ([7, 1, 4], -1), "Hàn Lộ": ([6, 9, 3], -1), "Sương Giáng": ([5, 8, 2], -1),
     "Lập Đông": ([6, 9, 3], -1), "Tiểu Tuyết": ([5, 8, 2], -1), "Đại Tuyết": ([4, 7, 1], -1),
-}
-
-# Tiết Dương độn (Đông Chí → trước Hạ Chí)
-_DUONG_DON_TIET = {
-    "Đông Chí", "Tiểu Hàn", "Đại Hàn",
-    "Lập Xuân", "Vũ Thủy", "Kinh Trập",
-    "Xuân Phân", "Thanh Minh", "Cốc Vũ",
-    "Lập Hạ", "Tiểu Mãn", "Mang Chủng",
 }
 
 

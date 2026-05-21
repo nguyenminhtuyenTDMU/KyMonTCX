@@ -4,6 +4,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 import pytz
 from kymon_logic import KyMonLapTran
+from kymon_nien_nguyet_nhat import lap_nien_gia, lap_nguyet_gia, lap_nhat_gia
 import pprint
 # Lưu ý: Thêm CSS cho badge TK Nhật/Thời
 st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
@@ -137,100 +138,195 @@ def render_cung_html_string(data, cung_id, ten_cung, tu_tru, tk_nhat, tk_thoi, d
 """
 
 
+MAP_TEN_CUNG = {1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4", 5: "Trung 5",
+                6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8", 9: "Ly 9"}
+
+
+def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma=""):
+    tk_nhat = tk_nhat or []
+    tk_thoi = tk_thoi or []
+    full_html = '<div class="grid-container">'
+    for r in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
+        for cid in r:
+            full_html += render_cung_html_string(
+                data9cung.get(cid), cid, MAP_TEN_CUNG.get(cid),
+                tu_tru_dict, tk_nhat, tk_thoi, dich_ma
+            )
+    full_html += '</div>'
+    st.markdown(full_html, unsafe_allow_html=True)
+
+
+def render_export_buttons(kq, label_prefix):
+    json_string = json.dumps(kq, ensure_ascii=False, indent=2)
+    dict_string = pprint.pformat(kq, indent=4, sort_dicts=False)
+    st.download_button(
+        label="⬇️ Tải JSON trận",
+        data=json_string,
+        file_name=f"{label_prefix}.json",
+        mime="application/json"
+    )
+    with st.expander("📋 Xem và Copy JSON"):
+        st.code(json_string, language="json")
+    with st.expander("📋 Xem và Copy Dictionary (Chuẩn Python)"):
+        st.code(dict_string, language="python")
+
+
 def main():
     st.title("🔮 Kỳ Môn Độn Giáp - Trương Chí Xuân")
+
+    tz_vn = pytz.timezone('Asia/Ho_Chi_Minh')
+    now = datetime.now(tz_vn)
+
     with st.sidebar:
-        st.header("1. Nhập Thời Gian")
-        tz_vn = pytz.timezone('Asia/Ho_Chi_Minh')
-        now = datetime.now(tz_vn)
+        loai_cuc = st.radio(
+            "Chọn Loại Cục",
+            ["Thời Gia", "Nhật Gia", "Nguyệt Gia", "Niên Gia"],
+        )
+
+        st.header("Nhập Thời Gian")
         c1, c2, c3 = st.columns(3)
         with c1: d = st.number_input("Ngày", 1, 31, now.day)
         with c2: m = st.number_input("Tháng", 1, 12, now.month)
         with c3: y = st.number_input("Năm", 1900, 2100, now.year)
-        c4, c5 = st.columns(2)
-        with c4: h = st.number_input("Giờ", 0, 23, now.hour)
-        with c5: mi = st.number_input("Phút", 0, 59, now.minute)
+
+        if loai_cuc == "Thời Gia":
+            c4, c5 = st.columns(2)
+            with c4:
+                h = st.number_input("Giờ", 0, 23, now.hour)
+            with c5:
+                mi = st.number_input("Phút", 0, 59, now.minute)
+        else:
+            h, mi = 12, 0
+
         btn = st.button("Lập Trận Đồ", type="primary")
-        text_ld = st.text_area("lý do")
-    if btn:
+        text_ld = st.text_area("Lý do")
+
+    if not btn:
+        st.markdown("---")
+        # fall through to toa cung button below
+    else:
         try:
-            dt = datetime(y, m, d, h, mi)
-        except:
-            st.error("Ngày không hợp lệ"); return
+            datetime(y, m, d, h, mi)
+        except ValueError:
+            st.error("Ngày không hợp lệ")
+            return
 
-        km = KyMonLapTran()
-        # Gọi lập quẻ (Logic mới đã xử lý đổi ngày giờ Tý)
-        kq = km.lap_que(y, m, d, h, mi)
-        dict_string = pprint.pformat(kq, indent=4, sort_dicts=False)
-        json_string = json.dumps(kq, ensure_ascii=False, indent=2)
+        if loai_cuc == "Thời Gia":
+            km = KyMonLapTran()
+            kq = km.lap_que(y, m, d, h, mi)
+            render_export_buttons(kq, f"ky_mon_thoi_{y}_{m}_{d}_{h}_{mi}")
 
-        st.download_button(
-            label="⬇️ Tải JSON trận",
-            data=json_string,
-            file_name=f"ky_mon_{y}_{m}_{d}_{h}_{mi}.json",
-            mime="application/json"
-        )
+            cc = kq['TuTru']
+            tu_tru_dict = {
+                'Y': xu_ly_don_giap(cc['Nam']),
+                'M': xu_ly_don_giap(cc['Thang']),
+                'D': xu_ly_don_giap(cc['Ngay']),
+                'H': xu_ly_don_giap(cc['Gio'])
+            }
+            tiet = kq['CanChi'].split('|')[-1].replace('Tiết ', '').strip()
+            tk_nhat = kq['InfoTuanKhong']['Nhat']
+            tk_thoi = kq['InfoTuanKhong']['Thoi']
+            dich_ma = km.tim_dich_ma(cc['Gio'].split()[1])
 
-        with st.expander("📋 Xem và Copy JSON"):
-            st.code(json_string, language="json")
-        with st.expander("📋 Xem và Copy Dictionary (Chuẩn Python)"):
-            # language="python" giúp tô màu cú pháp theo chuẩn Python
-            # Nút Copy tự động xuất hiện ở góc trên bên phải
-            st.code(dict_string, language="python")
-        # --- LẤY TỨ TRỤ CHUẨN TỪ KẾT QUẢ TRẢ VỀ ---
-        # (Không gọi lại km.lich.get_can_chi nữa vì nó tính theo âm lịch thường)
-        cc = kq['TuTru']
-
-        tu_tru_dict = {
-            'Y': xu_ly_don_giap(cc['Nam']),
-            'M': xu_ly_don_giap(cc['Thang']),
-            'D': xu_ly_don_giap(cc['Ngay']),
-            'H': xu_ly_don_giap(cc['Gio'])
-        }
-
-        tiet = kq['CanChi'].split('|')[-1].replace('Tiết ', '').strip()
-
-        tk_nhat = kq['InfoTuanKhong']['Nhat']
-        tk_thoi = kq['InfoTuanKhong']['Thoi']
-        dich_ma = km.tim_dich_ma(cc['Gio'].split()[1])
-
-        # Header Hiển thị
-        st.markdown(f"""
-                <div class="tu-tru-box">
-                    <div style="display: flex; justify-content: space-around;">
-                        <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(cc['Nam'].split()[0])}">{cc['Nam']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['Y']})</span></div></div>
-                        <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(cc['Thang'].split()[0])}">{cc['Thang']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['M']})</span></div></div>
-                        <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(cc['Ngay'].split()[0])}">{cc['Ngay']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['D']})</span></div></div>
-                        <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc['Gio'].split()[0])}">{cc['Gio']} <span style="font-size:0.7em; color:#777">({tu_tru_dict['H']})</span></div></div>
-                    </div>
-                    <div style="margin-top: 10px; text-align: center;color: #000">
-                        <b>{tiet}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq['TuanThu']}</b>
-                    </div>
-                    <div style="font-size: 0.9em; text-align: center; color: #555;">
-                        {kq['TrucPhuSu']}
-                    </div>
-                    <div style="font-size: 0.8em; text-align: center; margin-top: 5px;">
-                        <span class="badge-tk-n">Nhật Không: {', '.join(tk_nhat)}</span>
-                        <span class="badge-tk-g" style="margin-left:10px">Thời Không: {', '.join(tk_thoi)}</span>
-                        <span class="badge-ma" style="margin-left:10px">Mã: {dich_ma}</span>
-                    </div>
-                    <div style="margin-top: 10px; text-align: center;color: #000">
-                        lý do: {text_ld}
-                    </div>
+            st.markdown(f"""
+            <div class="tu-tru-box">
+                <div style="display:flex;justify-content:space-around;">
+                    <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(cc['Nam'].split()[0])}">{cc['Nam']} <span style="font-size:0.7em;color:#777">({tu_tru_dict['Y']})</span></div></div>
+                    <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(cc['Thang'].split()[0])}">{cc['Thang']} <span style="font-size:0.7em;color:#777">({tu_tru_dict['M']})</span></div></div>
+                    <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(cc['Ngay'].split()[0])}">{cc['Ngay']} <span style="font-size:0.7em;color:#777">({tu_tru_dict['D']})</span></div></div>
+                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(cc['Gio'].split()[0])}">{cc['Gio']} <span style="font-size:0.7em;color:#777">({tu_tru_dict['H']})</span></div></div>
                 </div>
-                """, unsafe_allow_html=True)
+                <div style="margin-top:10px;text-align:center;color:#000">
+                    <b>{tiet}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq['TuanThu']}</b>
+                </div>
+                <div style="font-size:0.9em;text-align:center;color:#555;">{kq['TrucPhuSu']}</div>
+                <div style="font-size:0.8em;text-align:center;margin-top:5px;">
+                    <span class="badge-tk-n">Nhật Không: {', '.join(tk_nhat)}</span>
+                    <span class="badge-tk-g" style="margin-left:10px">Thời Không: {', '.join(tk_thoi)}</span>
+                    <span class="badge-ma" style="margin-left:10px">Mã: {dich_ma}</span>
+                </div>
+                <div style="margin-top:10px;text-align:center;color:#000">Lý do: {text_ld}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            render_ban_9cung(kq['Data9Cung'], tu_tru_dict, tk_nhat, tk_thoi, dich_ma)
 
-        map_ten = {1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4", 5: "Trung 5", 6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8",
-                   9: "Ly 9"}
-        full_html = '<div class="grid-container">'
-        for r in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
-            for cid in r:
-                full_html += render_cung_html_string(kq['Data9Cung'].get(cid), cid, map_ten.get(cid), tu_tru_dict, tk_nhat,
-                                                     tk_thoi, dich_ma)
-        full_html += '</div>'
-        st.markdown(full_html, unsafe_allow_html=True)
-        # --- NÚT LẤY SỐ ĐỘC LẬP (KHÔNG LOAD LẠI TRANG) ---
-    st.markdown("---")
+        elif loai_cuc == "Nhật Gia":
+            kq = lap_nhat_gia(y, m, d)
+            render_export_buttons(kq, f"ky_mon_nhat_{y}_{m}_{d}")
+            can_ngay = kq['CanChiNgay'].split()[0]
+            tu_tru_dict = {'Y': '', 'M': '', 'D': can_ngay, 'H': ''}
+            st.markdown(f"""
+            <div class="tu-tru-box">
+                <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">
+                    Nhật Gia — Ngày {kq['Ngay']}
+                </div>
+                <div style="text-align:center;margin-top:6px;">
+                    <span class="tu-tru-item {lay_class_mau(can_ngay)}">{kq['CanChiNgay']}</span>
+                </div>
+                <div style="margin-top:8px;text-align:center;color:#000">
+                    <b>{kq['TietKhi']}</b> &bull; <b>{kq['ThongTinCuc']}</b> &bull; {kq['AmDuong']}
+                </div>
+                <div style="margin-top:4px;text-align:center;color:#000">
+                    Tuần Thủ: <b>{kq['TuanThu']}</b>
+                </div>
+                <div style="font-size:0.9em;text-align:center;color:#555;">{kq['TrucPhuSu']}</div>
+                <div style="margin-top:8px;text-align:center;color:#000">Lý do: {text_ld}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            render_ban_9cung(kq['Data9Cung'], tu_tru_dict)
+
+        elif loai_cuc == "Nguyệt Gia":
+            kq = lap_nguyet_gia(y, m, d)
+            render_export_buttons(kq, f"ky_mon_nguyet_{y}_{m}_{d}")
+            can_thang = kq['CanChiThang'].split()[0]
+            tu_tru_dict = {'Y': '', 'M': can_thang, 'D': '', 'H': ''}
+            st.markdown(f"""
+            <div class="tu-tru-box">
+                <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">
+                    Nguyệt Gia — Ngày {kq['NgayHoi']}
+                </div>
+                <div style="text-align:center;margin-top:6px;">
+                    <span class="tu-tru-item {lay_class_mau(can_thang)}">Tháng: {kq['CanChiThang']}</span>
+                </div>
+                <div style="margin-top:8px;text-align:center;color:#000">
+                    <b>{kq['TietKhi']}</b> &bull; <b>{kq['ThongTinCuc']}</b>
+                </div>
+                <div style="margin-top:4px;text-align:center;color:#000">
+                    Tuần Thủ: <b>{kq['TuanThu']}</b>
+                </div>
+                <div style="font-size:0.9em;text-align:center;color:#555;">{kq['TrucPhuSu']}</div>
+                <div style="margin-top:8px;text-align:center;color:#000">Lý do: {text_ld}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            render_ban_9cung(kq['Data9Cung'], tu_tru_dict)
+
+        elif loai_cuc == "Niên Gia":
+            kq = lap_nien_gia(y)
+            render_export_buttons(kq, f"ky_mon_nien_{y}")
+            can_nam = kq['CanChiNam'].split()[0]
+            tu_tru_dict = {'Y': can_nam, 'M': '', 'D': '', 'H': ''}
+            st.markdown(f"""
+            <div class="tu-tru-box">
+                <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">
+                    Niên Gia — Năm {kq['Nam']}
+                </div>
+                <div style="text-align:center;margin-top:6px;">
+                    <span class="tu-tru-item {lay_class_mau(can_nam)}">{kq['CanChiNam']}</span>
+                    &nbsp;—&nbsp; {kq['TamNguyen']} Nguyên
+                </div>
+                <div style="margin-top:8px;text-align:center;color:#000">
+                    <b>{kq['ThongTinCuc']}</b>
+                </div>
+                <div style="margin-top:4px;text-align:center;color:#000">
+                    Tuần Thủ: <b>{kq['TuanThu']}</b>
+                </div>
+                <div style="font-size:0.9em;text-align:center;color:#555;">{kq['TrucPhuSu']}</div>
+                <div style="margin-top:8px;text-align:center;color:#000">Lý do: {text_ld}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            render_ban_9cung(kq['Data9Cung'], tu_tru_dict)
+
+        st.markdown("---")
 
     components.html(
         """
