@@ -109,10 +109,13 @@ def render_cung_html_string(data, cung_id, ten_cung, tu_tru, tk_nhat, tk_thoi, d
     # Render các thành phần
     tag_thien = tao_tag_tu_tru(thien, tu_tru)
 
-    vs = pt.get('SaoVuongSuyCung') or pt.get('SaoVuongSuyThang', "")
-    html_vs = f'<div style="font-size:0.7em; color:#888;">({vs})</div>' if vs else ""
+    vs_cung = pt.get('SaoVuongSuyCung', "")
+    vs_thang = pt.get('SaoVuongSuyThang', "")
+    vs_parts = [p for p in [vs_cung, vs_thang] if p]
+    html_vs = f'<div style="font-size:0.7em; color:#888;">({" | ".join(vs_parts)})</div>' if vs_parts else ""
 
-    mo_thien = f'<span class="tag-mo">{pt.get('CanTruongSinh')}</span>'
+    truong_sinh = pt.get('CanTruongSinh') or ""
+    mo_thien = f'<span class="tag-mo">{truong_sinh}</span>' if truong_sinh else ""
     mo_mon = '<span class="tag-mo-mon">[Mộ]</span>' if pt.get('MonNhapMo') else ''
 
     html_chi = render_vong_dia_chi(cung_id, tk_nhat, tk_thoi, dich_ma)

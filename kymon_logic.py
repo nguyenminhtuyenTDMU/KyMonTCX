@@ -350,9 +350,11 @@ class KyMonLapTran:
             return None
         for cid, data in data9cung.items():
             thien = data.get("Thien", "") or ""
-            dia = data.get("Dia", "") or ""
             ds_thien = [x.strip() for x in thien.split("/") if x.strip()]
-            if can_tim in ds_thien or can_tim == dia:
+            if can_tim in ds_thien:
+                return cid
+        for cid, data in data9cung.items():
+            if can_tim == (data.get("Dia", "") or ""):
                 return cid
         return None
 
