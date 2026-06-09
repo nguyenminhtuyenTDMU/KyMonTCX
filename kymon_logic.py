@@ -307,17 +307,22 @@ class KyMonLapTran:
 
         return ten_stage
 
+    def _tinh_vuong_suy(self, hanh_sao, hanh_ref):
+        """So sánh ngũ hành sao với ngũ hành tham chiếu (cung hoặc nguyệt lệnh)."""
+        if not hanh_sao or not hanh_ref: return ""
+        if self.QUY_TAC_NGU_HANH[hanh_sao]["Sinh"] == hanh_ref: return "Vượng"   # ngã sinh chi
+        if hanh_sao == hanh_ref: return "Tướng"                                    # tỷ hòa
+        if self.QUY_TAC_NGU_HANH[hanh_sao]["Khắc"] == hanh_ref: return "Hưu"     # ngã khắc chi
+        if self.QUY_TAC_NGU_HANH[hanh_ref]["Sinh"] == hanh_sao: return "Phế"     # chi sinh ngã
+        if self.QUY_TAC_NGU_HANH[hanh_ref]["Khắc"] == hanh_sao: return "Tù"      # chi khắc ngã
+        return ""
+
     def tinh_vuong_suy_sao(self, ten_sao, cung_id):
         if not ten_sao or not cung_id: return ""
         hanh_sao = self.NGU_HANH_SAO.get(ten_sao)
         hanh_cung = self.NGU_HANH_CUNG.get(cung_id)
         if not hanh_sao or not hanh_cung: return ""
-        if hanh_sao == hanh_cung: return "Vượng"
-        if self.QUY_TAC_NGU_HANH[hanh_sao]["Sinh"] == hanh_cung: return "Hưu"
-        if self.QUY_TAC_NGU_HANH[hanh_cung]["Sinh"] == hanh_sao: return "Phế"
-        if self.QUY_TAC_NGU_HANH[hanh_cung]["Khắc"] == hanh_sao: return "Tù"
-        if self.QUY_TAC_NGU_HANH[hanh_sao]["Khắc"] == hanh_cung: return "Tướng"
-        return ""
+        return self._tinh_vuong_suy(hanh_sao, hanh_cung)
 
     def tim_dich_ma(self, chi_gio):
         if chi_gio in ["Thân", "Tý", "Thìn"]: return "Dần"
@@ -484,6 +489,10 @@ class KyMonLapTran:
         chi_gio = can_chi_gio_full.split()[-1]
         dich_ma = self.tim_dich_ma(chi_gio)
 
+        thang_parts = ket_qua_lap_que.get("TuTru", {}).get("Thang", "").split()
+        chi_thang = thang_parts[1] if len(thang_parts) > 1 else ""
+        hanh_nguyet = self.NGU_HANH_CHI.get(chi_thang, "")
+
         for cung_id in range(1, 10):
             if cung_id == 5: continue
             info = data_9_cung[cung_id]
@@ -494,6 +503,8 @@ class KyMonLapTran:
             ts_thien_ban = self.tinh_truong_sinh_theo_cung(can_thien, cung_id)
             ten_sao = info["Sao"]
             trang_thai_sao = self.tinh_vuong_suy_sao(ten_sao, cung_id)
+            hanh_sao = self.NGU_HANH_SAO.get(ten_sao, "")
+            vuong_suy_thang = self._tinh_vuong_suy(hanh_sao, hanh_nguyet)
 
             mon = info["Cua"]
             is_mon_nhap_mo = False
@@ -505,9 +516,9 @@ class KyMonLapTran:
 
             info["PhanTich"] = {
                 "DichMa": is_dich_ma,
-                "TruongSinh": ts_thien_ban,
-                "VuongSuyCung": trang_thai_sao,
-                "VuongSuyThang": trang_thai_sao,
+                "CanTruongSinh": ts_thien_ban,
+                "SaoVuongSuyCung": trang_thai_sao,
+                "SaoVuongSuyThang": vuong_suy_thang,
                 "MonNhapMo": is_mon_nhap_mo
             }
         return ket_qua_lap_que
