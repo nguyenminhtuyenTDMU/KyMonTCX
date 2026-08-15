@@ -5,6 +5,7 @@ from datetime import datetime
 import pytz
 from kymon_logic import KyMonLapTran
 from kymon_nien_nguyet_nhat import lap_nien_gia, lap_nguyet_gia, lap_nhat_gia
+import qimen
 import pprint
 # Lưu ý: Thêm CSS cho badge TK Nhật/Thời
 st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
@@ -159,6 +160,116 @@ def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma
     st.markdown(full_html, unsafe_allow_html=True)
 
 
+# --- RENDER CHO ENGINE qimen.py (thuật toán chuyển bàn, có ám can) ---
+def render_cung_qimen_html(p, cung_id, ten_cung):
+    if cung_id == 5:
+        yy_label = "Dương Độn" if p.yy == "阳" else "Âm Độn"
+        return f"""
+<div class="cung-box bg-tho">
+    <div class="cung-so">{ten_cung}</div>
+    <div style="position:absolute; top:32%; left:0; width:100%; text-align:center; font-weight:bold;">
+        CỤC {p.qmju}<br>({yy_label})<br>
+        <span style="font-size:0.75em; font-weight:normal; color:#555;">
+            Nguyệt Lệnh: {p.chi_nguyet} ({p.hanh_nguyet})
+        </span>
+    </div>
+</div>
+"""
+    god = qimen.SHEN_VN.get(p.shenpan[cung_id].strip(), "-")
+    star = qimen.XING_VN.get(p.xinpan[cung_id].strip(), "-")
+    gate = qimen.MEN_VN.get(p.menpan[cung_id].strip(), "-")
+    thien = qimen.gan_vn(p.tiangan[cung_id])
+    am = qimen.gan_vn(p.angan[cung_id])
+    dia = qimen.gan_vn(p.digan[cung_id])
+
+    marks = []
+    if p.kong[cung_id] == "O":
+        marks.append('<span class="badge-tk-n">Không</span>')
+    for zi, gong in enumerate(qimen.zhi2gong):
+        if p.maw[zi] == "马" and gong == cung_id:
+            marks.append('<span class="badge-ma">Mã</span>')
+    html_marks = "".join(marks)
+
+    vs_cung = p.cung_vuong_suy.get(cung_id, "")
+    html_vs = f'<div style="font-size:0.7em; color:#888;">({vs_cung})</div>' if vs_cung else ""
+
+    cls_s = lay_class_mau(star)
+    cls_c = lay_class_mau(gate)
+    cls_t = lay_class_mau(thien)
+    cls_d = lay_class_mau(dia)
+    cls_bg = lay_bg_cung(cung_id)
+
+    return f"""
+<div class="cung-box {cls_bg}">
+    <div class="cung-so">{ten_cung}</div>
+    <div class="than-vi hanh-hoa">{god}</div>
+    <div class="tinh-vi {cls_s}">{star}{html_vs}</div>
+    <div class="mon-vi {cls_c}">{gate}</div>
+    <div class="can-thien-ban {cls_t}">{thien}</div>
+    <div class="can-dia-ban {cls_d}">{dia}</div>
+    <div class="dia-chi-container" style="justify-content:center;">
+        <span style="font-size:0.75em;color:#555;">Ám: {am}</span>{html_marks}
+    </div>
+</div>
+"""
+
+
+def render_ban_9cung_qimen(p):
+    full_html = '<div class="grid-container">'
+    for r in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
+        for cid in r:
+            full_html += render_cung_qimen_html(p, cid, MAP_TEN_CUNG.get(cid))
+    full_html += '</div>'
+    st.markdown(full_html, unsafe_allow_html=True)
+
+
+def qimen_pan_to_dict(p):
+    """Chuyển kết quả paipan() (đã dịch tiếng Việt) sang dict để export JSON, cùng kiểu với KyMonLapTran.lap_que()."""
+    yy_label = "Dương Độn" if p.yy == "阳" else "Âm Độn"
+    zhifu_vn = qimen.XING_VN.get(p.zhifu, "Cầm")
+    zhishi_vn = qimen.MEN_VN.get(p.zhishi, "-")
+    xunkong1, xunkong2 = p.xunkong
+
+    data9cung = {}
+    for g in range(1, 10):
+        if g == 5:
+            data9cung[g] = {}
+            continue
+        marks = []
+        if p.kong[g] == "O": marks.append("Không")
+        for zi, gong in enumerate(qimen.zhi2gong):
+            if p.maw[zi] == "马" and gong == g: marks.append("Mã")
+        data9cung[g] = {
+            "Than": qimen.SHEN_VN.get(p.shenpan[g].strip(), "-"),
+            "Sao": qimen.XING_VN.get(p.xinpan[g].strip(), "-"),
+            "Cua": qimen.MEN_VN.get(p.menpan[g].strip(), "-"),
+            "Thien": qimen.gan_vn(p.tiangan[g]),
+            "Am": qimen.gan_vn(p.angan[g]),
+            "Dia": qimen.gan_vn(p.digan[g]),
+            "VuongSuyCung": p.cung_vuong_suy.get(g, ""),
+            "Marks": marks,
+        }
+
+    tY, tM, tD, tH, tMin = p.ngaygio
+    return {
+        "GioBacKinhLapTran": f"{tD:02d}/{tM:02d}/{tY} {tH:02d}:{tMin:02d}",
+        "TuTru": {
+            "Nam": qimen.cyclical_vn(p.cY),
+            "Thang": qimen.cyclical_vn(p.cM),
+            "Ngay": qimen.cyclical_vn(p.cD),
+            "Gio": qimen.cyclical_vn(p.gio_tru),
+        },
+        "TietKhi": qimen.solarTerm_vn[p.tmp2],
+        "ThongTinCuc": f"{yy_label} {p.qmju} Cục",
+        "TuanThu": qimen.cyclical_vn(p.xun_num),
+        "TrucPhuSu": f"Trực Phù: {zhifu_vn} | Trực Sử: {zhishi_vn}",
+        "KhongVong": f"{qimen.Zhi_vn[xunkong1]}-{qimen.Zhi_vn[xunkong2]}",
+        "DichMa": qimen.Zhi_vn[p.maxing],
+        "NguyetLenh": f"{p.chi_nguyet} ({p.hanh_nguyet})",
+        "Data9Cung": data9cung,
+    }
+
+
 def render_export_buttons(kq, label_prefix):
     json_string = json.dumps(kq, ensure_ascii=False, indent=2)
     dict_string = pprint.pformat(kq, indent=4, sort_dicts=False)
@@ -183,7 +294,7 @@ def main():
     with st.sidebar:
         loai_cuc = st.radio(
             "Chọn Loại Cục",
-            ["Thời Gia", "Nhật Gia", "Nguyệt Gia", "Niên Gia"],
+            ["Thời Gia", "Thời Gia (Chuyển Bàn)", "Nhật Gia", "Nguyệt Gia", "Niên Gia"],
         )
 
         st.header("Nhập Thời Gian")
@@ -192,7 +303,7 @@ def main():
         with c2: m = st.number_input("Tháng", 1, 12, now.month)
         with c3: y = st.number_input("Năm", 1900, 2100, now.year)
 
-        if loai_cuc == "Thời Gia":
+        if loai_cuc in ("Thời Gia", "Thời Gia (Chuyển Bàn)"):
             c4, c5 = st.columns(2)
             with c4:
                 h = st.number_input("Giờ", 0, 23, now.hour)
@@ -200,6 +311,20 @@ def main():
                 mi = st.number_input("Phút", 0, 59, now.minute)
         else:
             h, mi = 12, 0
+
+        qm_mode, qm_setju = 1, 0
+        if loai_cuc == "Thời Gia (Chuyển Bàn)":
+            qm_mode_label = st.selectbox(
+                "Chế độ (qimen.py)",
+                ["Chuẩn (Vương Phượng Lân)", "Truyền thống (Dương bàn)", "Khắc gia (+phút)", "Tự chọn Cục"],
+            )
+            qm_mode = {"Chuẩn (Vương Phượng Lân)": 1, "Truyền thống (Dương bàn)": 0,
+                       "Khắc gia (+phút)": 2, "Tự chọn Cục": 4}[qm_mode_label]
+            if qm_mode == 4:
+                qm_ju_abs = st.number_input("Cục số", 1, 9, 1)
+                qm_am_duong = st.radio("Âm/Dương Độn", ["Dương", "Âm"], horizontal=True)
+                qm_setju = qm_ju_abs if qm_am_duong == "Dương" else -qm_ju_abs
+            st.caption("Giờ nhập là giờ Việt Nam, tự động quy đổi sang giờ Bắc Kinh (+1h) trước khi lập trận.")
 
         btn = st.button("Lập Trận Đồ", type="primary")
         text_ld = st.text_area("Lý do")
@@ -252,6 +377,36 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             render_ban_9cung(kq['Data9Cung'], tu_tru_dict, tk_nhat, tk_thoi, dich_ma)
+
+        elif loai_cuc == "Thời Gia (Chuyển Bàn)":
+            dt_vn = tz_vn.localize(datetime(y, m, d, h, mi))
+            dt_bj = dt_vn.astimezone(qimen.BJ)
+            p = qimen.paipan(dt_bj, yinpan=qm_mode, setju=qm_setju)
+            kq_qm = qimen_pan_to_dict(p)
+            render_export_buttons(kq_qm, f"ky_mon_chuyenban_{y}_{m}_{d}_{h}_{mi}")
+
+            tt = kq_qm['TuTru']
+            st.markdown(f"""
+            <div class="tu-tru-box">
+                <div style="display:flex;justify-content:space-around;">
+                    <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item">{tt['Nam']}</div></div>
+                    <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item">{tt['Thang']}</div></div>
+                    <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item">{tt['Ngay']}</div></div>
+                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item">{tt['Gio']}</div></div>
+                </div>
+                <div style="margin-top:10px;text-align:center;color:#000">
+                    <b>Tiết {kq_qm['TietKhi']}</b> &bull; <b>{kq_qm['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq_qm['TuanThu']}</b>
+                </div>
+                <div style="font-size:0.9em;text-align:center;color:#555;">{kq_qm['TrucPhuSu']}</div>
+                <div style="font-size:0.8em;text-align:center;margin-top:5px;">
+                    <span class="badge-tk-n">Không Vong: {kq_qm['KhongVong']}</span>
+                    <span class="badge-ma" style="margin-left:10px">Mã: {kq_qm['DichMa']}</span>
+                </div>
+                <div style="font-size:0.75em;text-align:center;color:#888;margin-top:4px;">Giờ Bắc Kinh dùng lập trận: {kq_qm['GioBacKinhLapTran']}</div>
+                <div style="margin-top:10px;text-align:center;color:#000">Lý do: {text_ld}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            render_ban_9cung_qimen(p)
 
         elif loai_cuc == "Nhật Gia":
             kq = lap_nhat_gia(y, m, d)
