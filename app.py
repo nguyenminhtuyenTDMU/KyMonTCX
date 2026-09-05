@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import re
 import streamlit.components.v1 as components
 from datetime import datetime
 import pytz
@@ -67,8 +68,9 @@ def xu_ly_don_giap(cc):
 def tao_tag_tu_tru(can, tu_tru):
     if not can: return ""
     h = ""
-    for c in can.split('/'):
+    for c in re.split(r'[/,]', can):
         c = c.strip()
+        if not c: continue
         if c == tu_tru['Y']: h += '<div class="tag-can tag-y">Y</div>'
         if c == tu_tru['M']: h += '<div class="tag-can tag-m">M</div>'
         if c == tu_tru['D']: h += '<div class="tag-can tag-d">D</div>'
@@ -161,7 +163,7 @@ def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma
 
 
 # --- RENDER CHO ENGINE qimen.py (thuật toán chuyển bàn, có ám can) ---
-def render_cung_qimen_html(p, cung_id, ten_cung):
+def render_cung_qimen_html(p, cung_id, ten_cung, tu_tru=None):
     if cung_id == 5:
         yy_label = "Dương Độn" if p.yy == "阳" else "Âm Độn"
         return f"""
@@ -181,6 +183,7 @@ def render_cung_qimen_html(p, cung_id, ten_cung):
     thien = qimen.gan_vn(p.tiangan[cung_id])
     am = qimen.gan_vn(p.angan[cung_id])
     dia = qimen.gan_vn(p.digan[cung_id])
+    tag_thien = tao_tag_tu_tru(thien, tu_tru) if tu_tru else ""
 
     marks = []
     if p.kong[cung_id] == "O":
@@ -206,6 +209,7 @@ def render_cung_qimen_html(p, cung_id, ten_cung):
     <div class="tinh-vi {cls_s}">{star}{html_vs}</div>
     <div class="mon-vi {cls_c}">{gate}</div>
     <div class="can-thien-ban {cls_t}">{thien}</div>
+    <div class="tag-container-thien">{tag_thien}</div>
     <div class="can-dia-ban {cls_d}">{dia}</div>
     <div class="dia-chi-container" style="justify-content:center;">
         <span style="font-size:0.75em;color:#555;">Ám: {am}</span>{html_marks}
@@ -214,11 +218,11 @@ def render_cung_qimen_html(p, cung_id, ten_cung):
 """
 
 
-def render_ban_9cung_qimen(p):
+def render_ban_9cung_qimen(p, tu_tru=None):
     full_html = '<div class="grid-container">'
     for r in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
         for cid in r:
-            full_html += render_cung_qimen_html(p, cid, MAP_TEN_CUNG.get(cid))
+            full_html += render_cung_qimen_html(p, cid, MAP_TEN_CUNG.get(cid), tu_tru)
     full_html += '</div>'
     st.markdown(full_html, unsafe_allow_html=True)
 
@@ -324,7 +328,6 @@ def main():
                 qm_ju_abs = st.number_input("Cục số", 1, 9, 1)
                 qm_am_duong = st.radio("Âm/Dương Độn", ["Dương", "Âm"], horizontal=True)
                 qm_setju = qm_ju_abs if qm_am_duong == "Dương" else -qm_ju_abs
-            st.caption("Giờ nhập là giờ Việt Nam, dùng trực tiếp để lập trận (không quy đổi sang giờ Trung Quốc).")
 
         btn = st.button("Lập Trận Đồ", type="primary")
         text_ld = st.text_area("Lý do")
@@ -385,6 +388,12 @@ def main():
             render_export_buttons(kq_qm, f"ky_mon_chuyenban_{y}_{m}_{d}_{h}_{mi}")
 
             tt = kq_qm['TuTru']
+            tu_tru_dict_qm = {
+                'Y': xu_ly_don_giap(tt['Nam']),
+                'M': xu_ly_don_giap(tt['Thang']),
+                'D': xu_ly_don_giap(tt['Ngay']),
+                'H': xu_ly_don_giap(tt['Gio'])
+            }
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="display:flex;justify-content:space-around;">
@@ -405,7 +414,7 @@ def main():
                 <div style="margin-top:10px;text-align:center;color:#000">Lý do: {text_ld}</div>
             </div>
             """, unsafe_allow_html=True)
-            render_ban_9cung_qimen(p)
+            render_ban_9cung_qimen(p, tu_tru_dict_qm)
 
         elif loai_cuc == "Nhật Gia":
             kq = lap_nhat_gia(y, m, d)
