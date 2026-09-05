@@ -252,7 +252,7 @@ def qimen_pan_to_dict(p):
 
     tY, tM, tD, tH, tMin = p.ngaygio
     return {
-        "GioBacKinhLapTran": f"{tD:02d}/{tM:02d}/{tY} {tH:02d}:{tMin:02d}",
+        "GioLapTran": f"{tD:02d}/{tM:02d}/{tY} {tH:02d}:{tMin:02d}",
         "TuTru": {
             "Nam": qimen.cyclical_vn(p.cY),
             "Thang": qimen.cyclical_vn(p.cM),
@@ -324,7 +324,7 @@ def main():
                 qm_ju_abs = st.number_input("Cục số", 1, 9, 1)
                 qm_am_duong = st.radio("Âm/Dương Độn", ["Dương", "Âm"], horizontal=True)
                 qm_setju = qm_ju_abs if qm_am_duong == "Dương" else -qm_ju_abs
-            st.caption("Giờ nhập là giờ Việt Nam, tự động quy đổi sang giờ Bắc Kinh (+1h) trước khi lập trận.")
+            st.caption("Giờ nhập là giờ Việt Nam, dùng trực tiếp để lập trận (không quy đổi sang giờ Trung Quốc).")
 
         btn = st.button("Lập Trận Đồ", type="primary")
         text_ld = st.text_area("Lý do")
@@ -379,9 +379,8 @@ def main():
             render_ban_9cung(kq['Data9Cung'], tu_tru_dict, tk_nhat, tk_thoi, dich_ma)
 
         elif loai_cuc == "Thời Gia (Chuyển Bàn)":
-            dt_vn = tz_vn.localize(datetime(y, m, d, h, mi))
-            dt_bj = dt_vn.astimezone(qimen.BJ)
-            p = qimen.paipan(dt_bj, yinpan=qm_mode, setju=qm_setju)
+            dt_nhap = datetime(y, m, d, h, mi)
+            p = qimen.paipan(dt_nhap, yinpan=qm_mode, setju=qm_setju)
             kq_qm = qimen_pan_to_dict(p)
             render_export_buttons(kq_qm, f"ky_mon_chuyenban_{y}_{m}_{d}_{h}_{mi}")
 
@@ -389,10 +388,10 @@ def main():
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="display:flex;justify-content:space-around;">
-                    <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item">{tt['Nam']}</div></div>
-                    <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item">{tt['Thang']}</div></div>
-                    <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item">{tt['Ngay']}</div></div>
-                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item">{tt['Gio']}</div></div>
+                    <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(tt['Nam'].split()[0])}">{tt['Nam']}</div></div>
+                    <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(tt['Thang'].split()[0])}">{tt['Thang']}</div></div>
+                    <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(tt['Ngay'].split()[0])}">{tt['Ngay']}</div></div>
+                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(tt['Gio'].split()[0])}">{tt['Gio']}</div></div>
                 </div>
                 <div style="margin-top:10px;text-align:center;color:#000">
                     <b>Tiết {kq_qm['TietKhi']}</b> &bull; <b>{kq_qm['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq_qm['TuanThu']}</b>
@@ -402,7 +401,7 @@ def main():
                     <span class="badge-tk-n">Không Vong: {kq_qm['KhongVong']}</span>
                     <span class="badge-ma" style="margin-left:10px">Mã: {kq_qm['DichMa']}</span>
                 </div>
-                <div style="font-size:0.75em;text-align:center;color:#888;margin-top:4px;">Giờ Bắc Kinh dùng lập trận: {kq_qm['GioBacKinhLapTran']}</div>
+                <div style="font-size:0.75em;text-align:center;color:#888;margin-top:4px;">Giờ Việt Nam dùng lập trận: {kq_qm['GioLapTran']}</div>
                 <div style="margin-top:10px;text-align:center;color:#000">Lý do: {text_ld}</div>
             </div>
             """, unsafe_allow_html=True)
