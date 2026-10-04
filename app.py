@@ -8,6 +8,7 @@ from kymon_logic import KyMonLapTran
 from kymon_nien_nguyet_nhat import lap_nien_gia, lap_nguyet_gia, lap_nhat_gia
 import qimen
 import pprint
+from timgio import CUNG_KICH_HINH, CUNG_NHAP_MO
 # Lưu ý: Thêm CSS cho badge TK Nhật/Thời
 st.set_page_config(page_title="Kỳ Môn Độn Giáp", layout="wide", initial_sidebar_state="expanded")
 
@@ -17,6 +18,9 @@ st.markdown("""
     .badge-tk-n { background-color: #c62828; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Đỏ đậm - Ngày */
     .badge-tk-g { background-color: #ef6c00; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Cam đậm - Giờ */
     .badge-ma   { background-color: #fdd835; color: black; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; }
+    .badge-hinh { background-color: #6a1b9a; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Tím - Kích Hình */
+    .badge-mo   { background-color: #424242; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Xám đen - Nhập Mộ */
+    .badge-bach { background-color: #1565c0; color: white; border-radius: 3px; padding: 0 3px; font-size: 0.8em; margin-left: 2px; } /* Xanh - Môn Bách */
     /* --- GRID CONTAINER --- */
     .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 950px; margin: 0 auto; }
     .cung-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; height: 170px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.08); overflow: hidden; }
@@ -147,6 +151,45 @@ def render_cung_html_string(data, cung_id, ten_cung, tu_tru, tk_nhat, tk_thoi, d
 MAP_TEN_CUNG = {1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4", 5: "Trung 5",
                 6: "Càn 6", 7: "Đoài 7", 8: "Cấn 8", 9: "Ly 9"}
 
+# --- TỨ HẠI: Kích Hình, Nhập Mộ, Môn Bách (Không Vong đã có badge riêng) ---
+NGU_HANH_MON = {"Hưu": "Thủy", "Sinh": "Thổ", "Thương": "Mộc", "Đỗ": "Mộc",
+                "Cảnh": "Hỏa", "Tử": "Thổ", "Kinh": "Kim", "Khai": "Kim"}
+HANH_KHAC = {"Kim": "Mộc", "Mộc": "Thổ", "Thổ": "Thủy", "Thủy": "Hỏa", "Hỏa": "Kim"}
+
+
+def tim_tu_hai(cung_id, thien, dia, gate):
+    """Trả về list badge HTML cho Kích Hình / Nhập Mộ (xét mọi can Thiên + Địa bàn) và Môn Bách (Cửa khắc Cung)."""
+    cans = [c.strip() for c in re.split(r'[/,]', f"{thien},{dia}") if c.strip() and c.strip() != "-"]
+    hinh = [c for c in dict.fromkeys(cans) if c in CUNG_KICH_HINH.get(cung_id, [])]
+    mo = [c for c in dict.fromkeys(cans) if c in CUNG_NHAP_MO.get(cung_id, [])]
+    badges = []
+    if hinh:
+        badges.append(f'<span class="badge-hinh" title="Kích Hình: {", ".join(hinh)}">Hình</span>')
+    if mo:
+        badges.append(f'<span class="badge-mo" title="Nhập Mộ: {", ".join(mo)}">Mộ</span>')
+    hanh_mon = NGU_HANH_MON.get(gate)
+    if hanh_mon and HANH_KHAC[hanh_mon] == qimen.NGU_HANH_CUNG.get(cung_id):
+        badges.append(f'<span class="badge-bach" title="Môn Bách: {gate} khắc cung">Bách</span>')
+    return badges
+
+
+@st.cache_resource
+def lay_km():
+    return KyMonLapTran()
+
+
+def tinh_truong_sinh_qimen(can, cung_id):
+    """12 vòng Trường Sinh của can tại cung. Can nằm trong CUNG_NHAP_MO thì là Mộ (khớp badge Mộ)."""
+    km = lay_km()
+    if cung_id == 5 or can not in km.BANG_TRUONG_SINH: return ""
+    if can in CUNG_NHAP_MO.get(cung_id, []): return "Mộ"
+    list_chi = km.CUNG_TO_CHI.get(cung_id, [])
+    if not list_chi: return ""
+    # Ưu tiên Chi cùng Âm/Dương với Can (giống kymon_logic)
+    pol_can = km.STEM_POLARITY[can]
+    chi = next((c for c in list_chi if km.BRANCH_POLARITY.get(c) == pol_can), list_chi[0])
+    return km.TEN_12_GIAI_DOAN[km.BANG_TRUONG_SINH[can][chi]]
+
 
 def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma=""):
     tk_nhat = tk_nhat or []
@@ -191,7 +234,11 @@ def render_cung_qimen_html(p, cung_id, ten_cung, tu_tru=None):
     for zi, gong in enumerate(qimen.zhi2gong):
         if p.maw[zi] == "马" and gong == cung_id:
             marks.append('<span class="badge-ma">Mã</span>')
+    marks += tim_tu_hai(cung_id, thien, dia, gate)
     html_marks = "".join(marks)
+
+    truong_sinh = tinh_truong_sinh_qimen(thien.split(",")[0], cung_id)
+    ts_thien = f'<span class="tag-mo">{truong_sinh}</span>' if truong_sinh else ""
 
     vs_cung = p.cung_vuong_suy.get(cung_id, "")
     html_vs = f'<div style="font-size:0.7em; color:#888;">({vs_cung})</div>' if vs_cung else ""
@@ -208,7 +255,7 @@ def render_cung_qimen_html(p, cung_id, ten_cung, tu_tru=None):
     <div class="than-vi hanh-hoa">{god}</div>
     <div class="tinh-vi {cls_s}">{star}{html_vs}</div>
     <div class="mon-vi {cls_c}">{gate}</div>
-    <div class="can-thien-ban {cls_t}">{thien}</div>
+    <div class="can-thien-ban {cls_t}">{thien}{ts_thien}</div>
     <div class="tag-container-thien">{tag_thien}</div>
     <div class="can-dia-ban {cls_d}">{dia}</div>
     <div class="dia-chi-container" style="justify-content:center;">

@@ -5,12 +5,12 @@ from kymon_logic import KyMonLapTran
 # 1. CẤU HÌNH QUY TẮC PHONG THỦY (DỄ DÀNG CHỈNH SỬA)
 # =========================================================
 START_YEAR = 2026
-START_MONTH = 4
-START_DAY =1
-START_HOUR = 1
+START_MONTH = 10
+START_DAY =4
+START_HOUR = 23
 START_MINUTE = 0
 
-DANH_SACH_CUNG_CAN_TIM = [3]
+DANH_SACH_CUNG_CAN_TIM = [2,3,4,8]
 
 # Mapping Cung -> Địa chi (Để check Không Vong Thời)
 CUNG_CHI = {
@@ -22,6 +22,14 @@ CUNG_CHI = {
 CUNG_KICH_HINH = {
     2: ["Kỷ"], 3: ["Mậu"], 4: ["Nhâm", "Quý"],
     8: ["Canh"], 9: ["Bính"], 1: ["Quý"]  # Cung 1 kỵ Quý (Giáp Dần hình Tý)
+}
+
+# Mapping Cung -> Thiên Can bị Nhập Mộ (Tứ Hại Mộ)
+# Giáp, Quý mộ Mùi (Khôn); Ất, Bính, Mậu mộ Tuất (Càn)
+# Đinh, Kỷ, Canh mộ Sửu (Cấn); Tân, Nhâm mộ Thìn (Tốn)
+CUNG_NHAP_MO = {
+    2: ["Giáp", "Quý"], 6: ["Ất", "Bính", "Mậu"],
+    8: ["Đinh", "Kỷ", "Canh"], 4: ["Tân", "Nhâm"]
 }
 
 MAP_TEN_CUNG = {
@@ -67,13 +75,13 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     # --- ĐIỀU KIỆN CỨNG (HARD CRITERIA) ---
 
     # 1. Bắt buộc: Cảnh Môn + Trực Phù (Có thể đổi tùy mục đích)
-    if cua != 'Hưu' or sao!="Phụ":
+    if cua != 'Cảnh':
         return False
 
     # 2. Loại trừ Hung Thần/Hung Tinh
-    if 'Canh' in thien or 'Canh' in dia: return False
+    # if 'Canh' in thien or 'Canh' in dia: return False
     if 'Bạch Hổ' in than: return False
-    if 'Nhu' in sao or 'Bồng' in sao: return False
+    # if 'Nhu' in sao or 'Bồng' in sao: return False
 
     # 3. Check Không Vong (Thời)
     tk_thoi = kq['InfoTuanKhong'].get('Thoi', [])
@@ -87,9 +95,14 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     if can_thien_chinh in list_kich or can_dia_chinh in list_kich:
         return False
 
+    # 5. Check Nhập Mộ (Cả Thiên và Địa bàn)
+    list_mo = CUNG_NHAP_MO.get(cung_id, [])
+    if can_thien_chinh in list_mo or can_dia_chinh in list_mo:
+        return False
+
     # --- ĐIỀU KIỆN ĐIỂM (SOFT CRITERIA) ---
     # Bật dòng dưới nếu muốn lọc quẻ có điểm cát cao (ví dụ >= 6)
-    if tinh_diem_cat(thien, dia, sao, than, cua) < 8: return False
+    # if tinh_diem_cat(thien, dia, sao, than, cua) < 8: return False
 
     return True
 
@@ -125,19 +138,19 @@ def tim_tran_phu_hop():
         for cung_id in DANH_SACH_CUNG_CAN_TIM:
             if kiem_tra_cung_dat_chuan(kq, cung_id):
                 c_data = kq['Data9Cung'][cung_id]
-                diem = tinh_diem_cat(c_data['Thien'], c_data['Dia'], c_data['Sao'], c_data['Than'], c_data['Cua'])
+                # diem = tinh_diem_cat(c_data['Thien'], c_data['Dia'], c_data['Sao'], c_data['Than'], c_data['Cua'])
 
                 print(f"⭐ TÌM THẤY TRẬN ĐỒ ƯNG Ý!")
                 print("-" * 55)
                 print(f"⏰ Thời gian: {current_time.strftime('%H:%M - %d/%m/%Y')}")
-                print(f"🎯 Cung: {MAP_TEN_CUNG[cung_id].upper()} | Điểm Cát: {diem}")
+                print(f"🎯 Cung: {MAP_TEN_CUNG[cung_id].upper()}")
                 print(
                     f"📜 Tứ Trụ: {kq['TuTru']['Nam']} - {kq['TuTru']['Thang']} - {kq['TuTru']['Ngay']} - {kq['TuTru']['Gio']}")
                 print(f"⚙️ Cục: {kq['ThongTinCuc']} | Tuần Thủ: {kq['TuanThu']}")
                 print(f"🔹 Thần: {c_data['Than']} | Sao: {c_data['Sao']} | Cửa: {c_data['Cua']}")
                 print(f"🔹 Thiên/Địa: {c_data['Thien']} / {c_data['Dia']}")
                 print("-" * 55)
-
+                return
                 # Nếu chỉ tìm 1 kết quả gần nhất thì return, nếu tìm hết thì bỏ return
 
 
