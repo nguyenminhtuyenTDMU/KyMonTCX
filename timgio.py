@@ -19,9 +19,11 @@ CUNG_CHI = {
 }
 
 # Mapping Cung -> Thiên Can bị Kích Hình
+# Mậu, Kỷ hình ở Chấn, Khôn; Canh, Tân hình ở Cấn, Ly; Nhâm, Quý hình ở Tốn
 CUNG_KICH_HINH = {
-    2: ["Kỷ"], 3: ["Mậu"], 4: ["Nhâm", "Quý"],
-    8: ["Canh"], 9: ["Bính"], 1: ["Quý"]  # Cung 1 kỵ Quý (Giáp Dần hình Tý)
+    3: ["Mậu", "Kỷ"], 2: ["Mậu", "Kỷ"],
+    8: ["Canh", "Tân"], 9: ["Canh", "Tân"],
+    4: ["Nhâm", "Quý"]
 }
 
 # Mapping Cung -> Thiên Can bị Nhập Mộ (Tứ Hại Mộ)
@@ -88,16 +90,13 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     for chi in CUNG_CHI.get(cung_id, []):
         if chi in tk_thoi: return False
 
-    # 4. Check Kích Hình (Cả Thiên và Địa bàn)
+    # 4. Check Kích Hình (chỉ Thiên bàn)
     can_thien_chinh = thien.split("/")[0].strip()
-    can_dia_chinh = dia.split("/")[0].strip()
-    list_kich = CUNG_KICH_HINH.get(cung_id, [])
-    if can_thien_chinh in list_kich or can_dia_chinh in list_kich:
+    if can_thien_chinh in CUNG_KICH_HINH.get(cung_id, []):
         return False
 
-    # 5. Check Nhập Mộ (Cả Thiên và Địa bàn)
-    list_mo = CUNG_NHAP_MO.get(cung_id, [])
-    if can_thien_chinh in list_mo or can_dia_chinh in list_mo:
+    # 5. Check Nhập Mộ (chỉ Thiên bàn)
+    if can_thien_chinh in CUNG_NHAP_MO.get(cung_id, []):
         return False
 
     # --- ĐIỀU KIỆN ĐIỂM (SOFT CRITERIA) ---

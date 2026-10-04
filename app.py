@@ -157,9 +157,9 @@ NGU_HANH_MON = {"Hưu": "Thủy", "Sinh": "Thổ", "Thương": "Mộc", "Đỗ":
 HANH_KHAC = {"Kim": "Mộc", "Mộc": "Thổ", "Thổ": "Thủy", "Thủy": "Hỏa", "Hỏa": "Kim"}
 
 
-def tim_tu_hai(cung_id, thien, dia, gate):
-    """Trả về list badge HTML cho Kích Hình / Nhập Mộ (xét mọi can Thiên + Địa bàn) và Môn Bách (Cửa khắc Cung)."""
-    cans = [c.strip() for c in re.split(r'[/,]', f"{thien},{dia}") if c.strip() and c.strip() != "-"]
+def tim_tu_hai(cung_id, thien, gate):
+    """Trả về list badge HTML cho Kích Hình / Nhập Mộ (chỉ xét can Thiên bàn) và Môn Bách (Cửa khắc Cung)."""
+    cans = [c.strip() for c in re.split(r'[/,]', thien) if c.strip() and c.strip() != "-"]
     hinh = [c for c in dict.fromkeys(cans) if c in CUNG_KICH_HINH.get(cung_id, [])]
     mo = [c for c in dict.fromkeys(cans) if c in CUNG_NHAP_MO.get(cung_id, [])]
     badges = []
@@ -234,7 +234,7 @@ def render_cung_qimen_html(p, cung_id, ten_cung, tu_tru=None):
     for zi, gong in enumerate(qimen.zhi2gong):
         if p.maw[zi] == "马" and gong == cung_id:
             marks.append('<span class="badge-ma">Mã</span>')
-    marks += tim_tu_hai(cung_id, thien, dia, gate)
+    marks += tim_tu_hai(cung_id, thien, gate)
     html_marks = "".join(marks)
 
     truong_sinh = tinh_truong_sinh_qimen(thien.split(",")[0], cung_id)
