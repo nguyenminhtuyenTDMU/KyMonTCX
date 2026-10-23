@@ -1,0 +1,33 @@
+# Cấu hình build app offline (Flet) cho Desktop & Mobile — xem mục "App Desktop & Mobile" trong README.
+[project]
+name = "kymontcx"
+version = "1.0.0"
+description = "Kỳ Môn Độn Giáp - lập trận offline"
+requires-python = ">=3.10"
+dependencies = [
+    "flet==1.0.3",
+]
+
+[tool.flet]
+org = "com.kymontcx"
+product = "Kỳ Môn Độn Giáp"
+company = "KyMonTCX"
+copyright = "Copyright (C) 2026 KyMonTCX"
+
+[tool.flet.app]
+path = "."
+module = "main"
+# App offline không cần Skyfield/ephemeris (32MB), Streamlit hay API — loại khỏi gói build.
+exclude = [
+    "de440s.bsp", "de421.bsp",
+    "app.py", "api.py", "am_lich_vn.py", "calculate_solar_terms.py", "generate_calendar_cache.py",
+    ".idea", ".github", "requirements.txt", "README.md",
+]
+
+[tool.flet.android]
+split_per_abi = true
+
+# Flet 1.0.3 ghim jni 1.0.0, nhưng jni_flutter 1.0.4 trở lên đòi jni ^1.1.0 (JniVersionCheck(1, 1)) -> lỗi build APK.
+# Ghim jni_flutter về 1.0.3 — bản cuối còn tương thích jni 1.0.x. Bỏ dòng này khi nâng Flet lên bản đã sửa.
+[tool.flet.flutter.pubspec.dependency_overrides]
+jni_flutter = "1.0.3"

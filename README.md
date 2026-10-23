@@ -8,6 +8,34 @@
 streamlit run app.py
 ```
 
+## App Desktop & Mobile (offline)
+
+`main.py` là app [Flet](https://flet.dev) chạy hoàn toàn offline trên Windows, macOS, Linux, Android và iOS.
+App dùng chung engine với Streamlit (qua `kymon_view.py`), có đủ 5 loại cục (Thời Gia, Thời Gia Chuyển Bàn,
+Nhật/Nguyệt/Niên Gia), badge Tuần Không/Mã/Hình/Mộ/Bách, Tỏa Cung, lưu/copy JSON.
+App không cần Skyfield hay `de440s.bsp`: tiết khí đọc từ `data/tiet_khi_cache.json` (1900–2100),
+âm lịch tính bằng thuật toán Hồ Ngọc Đức (`am_lich_offline.py`).
+
+Chạy thử trên máy:
+
+```bash
+pip install "flet[all]==1.0.3"
+flet run main.py            # cửa sổ desktop
+flet run --android main.py  # chạy thử trên điện thoại qua app "Flet" (cùng mạng Wi-Fi)
+```
+
+Build file cài đặt (lần đầu Flet tự tải Flutter SDK / Android SDK):
+
+```bash
+flet build apk       # Android  -> build/apk
+flet build windows   # Windows  -> build/windows (cần Visual Studio + "Desktop development with C++")
+flet build macos     # macOS    -> build/macos (chạy trên máy Mac)
+flet build ipa       # iOS      (chạy trên máy Mac, cần tài khoản Apple Developer)
+```
+
+Hoặc build trên GitHub: tab **Actions** → **Build apps** → **Run workflow**, tải file ở mục *Artifacts*
+(cũng tự chạy khi push tag `v*`).
+
 ## Chạy API
 
 ```bash

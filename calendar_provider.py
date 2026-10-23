@@ -3,15 +3,14 @@ from functools import lru_cache
 from pathlib import Path
 import json
 
-import pytz
-
-from am_lich_vn import AmLichVN
+import am_lich_offline
+from tz_vn import TZ_VN
 
 
 class CachedCalendarProvider:
     def __init__(self, cache_path=None):
         self.cache_path = Path(cache_path or Path(__file__).parent / "data" / "tiet_khi_cache.json")
-        self.tz_vn = pytz.timezone("Asia/Ho_Chi_Minh")
+        self.tz_vn = TZ_VN
         self.CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"]
         self.CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"]
         self._cache = self._load_cache()
@@ -29,7 +28,10 @@ class CachedCalendarProvider:
 
     @property
     def dynamic(self):
+        # Skyfield + de440s.bsp chỉ cần khi tính tiết khí ngoài khoảng cache (1900-2100).
+        # Import muộn để app offline (desktop/mobile) chạy được mà không cần Skyfield.
         if self._dynamic is None:
+            from am_lich_vn import AmLichVN
             self._dynamic = AmLichVN()
         return self._dynamic
 
@@ -37,7 +39,7 @@ class CachedCalendarProvider:
         dt = datetime.fromisoformat(value)
         if dt.tzinfo is None:
             return self.tz_vn.localize(dt)
-        return dt.astimezone(self.tz_vn)
+        return self.tz_vn.fromutc_aware(dt)
 
     def _parse_tiet_item(self, item):
         return {
@@ -79,7 +81,7 @@ class CachedCalendarProvider:
                 date_data["lunar_year"],
                 date_data["is_leap_month"],
             )
-        return self.dynamic.get_lunar_date(dd, mm, yy)
+        return am_lich_offline.get_lunar_date(dd, mm, yy)
 
     def get_can_chi(self, dd, mm, yy, lunar_month, lunar_year, hour=0):
         can_nam = self.CAN[(lunar_year + 6) % 10]

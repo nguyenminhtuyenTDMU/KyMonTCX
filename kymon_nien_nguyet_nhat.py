@@ -87,6 +87,17 @@ def an_thien_ban_theo_can(dia_ban: dict, cung_tp_goc: int, target_can: str) -> d
     return thien_ban
 
 
+def can_dich_truc_phu(can_goc: str, can_tuan_thu: str) -> str:
+    """Can mà Trực Phù bay tới: can của năm/tháng/ngày; can Giáp thì ẩn dưới nghi tuần thủ."""
+    return can_tuan_thu if can_goc == "Giáp" else can_goc
+
+
+def cung_cua_can(dia_ban: dict, can: str) -> int:
+    """Cung địa bàn chứa `can`; trung cung ký Khôn 2."""
+    cung = next(c for c, v in dia_ban.items() if v == can)
+    return cung if cung != 5 else 2
+
+
 def an_bat_mon_theo_chi(cung_ts_goc: int, chi_dich: str, chi_tuan_thu: str, am_duong: int) -> dict:
     """Bố bát môn: Trị Sứ tùy chi, Âm nghịch hành."""
     idx_chi_tuan = DIA_CHI.index(chi_tuan_thu)
@@ -168,12 +179,12 @@ def tinh_can_chi_nam_tiet_khi(year: int, lich: CachedCalendarProvider | None = N
 def solar_year_of_date(year: int, month: int, day: int,
                        lich: CachedCalendarProvider) -> int:
     """Năm tiết khí chứa ngày year/month/day (so sánh với Lập Xuân)."""
-    import pytz
+    from tz_vn import TZ_VN
     ds_tiet = lich.lay_danh_sach_tiet_khi_ca_nam(year)
     lap_xuan = next((t["ThoiGianTinh"] for t in ds_tiet if t["Ten"] == "Lập Xuân"), None)
     if lap_xuan is None:
         return year
-    ref = pytz.timezone("Asia/Ho_Chi_Minh").localize(datetime(year, month, day, 12, 0))
+    ref = TZ_VN.localize(datetime(year, month, day, 12, 0))
     return year if ref >= lap_xuan else year - 1
 
 
@@ -195,14 +206,9 @@ def lap_nien_gia(year: int, lich: CachedCalendarProvider | None = None) -> dict:
     sao_tp, cua_ts, cung_tp_goc = tim_truc_phu_truc_su(dia_ban, can_tuan_thu)
 
     # Trị Phù tùy năm can → xoay Thiên bàn
-    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_tuan_thu)
-
-    # Tìm cung TP mới (trên Thiên bàn sau khi xoay)
-    cung_sao_tp_moi = next(
-        (c for c in VONG_TRON_8_CUNG if thien_ban[c]["Sao"] == sao_tp), cung_tp_goc
-    )
-    if cung_sao_tp_moi == 5:
-        cung_sao_tp_moi = 2
+    can_dich = can_dich_truc_phu(can_nam, can_tuan_thu)
+    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_dich)
+    cung_sao_tp_moi = cung_cua_can(dia_ban, can_dich)
 
     # Trị Sứ tùy năm chi + Âm nghịch hành → bố 8 môn
     chi_tuan_thu_str = ten_tuan.split()[1]
@@ -242,14 +248,15 @@ TIET_KHI_TO_CHI_THANG = {
     "Tiểu Hàn": "Sửu", "Đại Hàn": "Sửu",
 }
 
-# Chi năm Phù đầu → Nguyên + cục
+# Chi năm Phù đầu → Nguyên + cục (5 năm một cục: 2014 Giáp Ngọ Âm 1, 2019 Kỷ Hợi Âm 4,
+# 2024 Giáp Thìn Âm 7 — khớp paipan.china95.net và ví dụ tháng 7/2022 trong 九宮奇門 2)
 _PHU_DAU_CHI_TO_NGUYEN = {
-    "Tý": ("Thượng", 7), "Ngọ": ("Thượng", 7),
-    "Mão": ("Thượng", 7), "Dậu": ("Thượng", 7),
-    "Dần": ("Trung", 1), "Thân": ("Trung", 1),
-    "Tỵ": ("Trung", 1), "Hợi": ("Trung", 1),
-    "Thìn": ("Hạ", 4), "Tuất": ("Hạ", 4),
-    "Sửu": ("Hạ", 4), "Mùi": ("Hạ", 4),
+    "Tý": ("Thượng", 1), "Ngọ": ("Thượng", 1),
+    "Mão": ("Thượng", 1), "Dậu": ("Thượng", 1),
+    "Dần": ("Trung", 4), "Thân": ("Trung", 4),
+    "Tỵ": ("Trung", 4), "Hợi": ("Trung", 4),
+    "Thìn": ("Hạ", 7), "Tuất": ("Hạ", 7),
+    "Sửu": ("Hạ", 7), "Mùi": ("Hạ", 7),
 }
 
 
@@ -302,13 +309,10 @@ def lap_nguyet_gia(year: int, month: int, day: int,
     can_tuan_thu, ten_tuan = tim_tuan_thu(can_thang, chi_thang)
     sao_tp, cua_ts, cung_tp_goc = tim_truc_phu_truc_su(dia_ban, can_tuan_thu)
 
-    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_tuan_thu)
-
-    cung_sao_tp_moi = next(
-        (c for c in VONG_TRON_8_CUNG if thien_ban[c]["Sao"] == sao_tp), cung_tp_goc
-    )
-    if cung_sao_tp_moi == 5:
-        cung_sao_tp_moi = 2
+    # Trị Phù tùy nguyệt can → xoay Thiên bàn
+    can_dich = can_dich_truc_phu(can_thang, can_tuan_thu)
+    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_dich)
+    cung_sao_tp_moi = cung_cua_can(dia_ban, can_dich)
 
     chi_tuan_thu_str = ten_tuan.split()[1]
     bat_mon = an_bat_mon_theo_chi(cung_tp_goc, chi_thang, chi_tuan_thu_str, am_duong)
@@ -328,44 +332,37 @@ def lap_nguyet_gia(year: int, month: int, day: int,
 
 
 # ================================================================
-# 3. NHẬT GIA KỲ MÔN — Triệt Bổ Pháp
+# 3. NHẬT GIA KỲ MÔN — 日盤遁甲定局圖 (giáo trình Đại Sư Ban tr.110–111)
 # ================================================================
 
-MAP_CUC_TIET_KHI = {
-    "Đông Chí": ([1, 7, 4], 1), "Tiểu Hàn": ([2, 8, 5], 1), "Đại Hàn": ([3, 9, 6], 1),
-    "Lập Xuân": ([8, 5, 2], 1), "Vũ Thủy": ([9, 6, 3], 1), "Kinh Trập": ([8, 5, 2], 1),
-    "Xuân Phân": ([3, 9, 6], 1), "Thanh Minh": ([4, 1, 7], 1), "Cốc Vũ": ([5, 2, 8], 1),
-    "Lập Hạ": ([4, 1, 7], 1), "Tiểu Mãn": ([5, 2, 8], 1), "Mang Chủng": ([6, 3, 9], 1),
-    "Hạ Chí": ([9, 3, 6], -1), "Tiểu Thử": ([8, 2, 5], -1), "Đại Thử": ([7, 1, 4], -1),
-    "Lập Thu": ([2, 5, 8], -1), "Xử Thử": ([1, 4, 7], -1), "Bạch Lộ": ([9, 3, 6], -1),
-    "Thu Phân": ([7, 1, 4], -1), "Hàn Lộ": ([6, 9, 3], -1), "Sương Giáng": ([5, 8, 2], -1),
-    "Lập Đông": ([6, 9, 3], -1), "Tiểu Tuyết": ([5, 8, 2], -1), "Đại Tuyết": ([4, 7, 1], -1),
-}
+def _giap_ty_gan_nhat(moc: datetime) -> date:
+    """Ngày Giáp Tý gần thời điểm `moc` nhất (hai ngày Giáp Tý cách nhau 60 ngày)."""
+    ngay_moc = moc.date()
+    ung_vien = [ngay_moc + timedelta(days=k) for k in range(-30, 31)]
+    ung_vien = [d for d in ung_vien if tinh_can_chi_ngay(d.day, d.month, d.year) == ("Giáp", "Tý")]
+    return min(ung_vien, key=lambda d: abs(moc.replace(year=d.year, month=d.month, day=d.day,
+                                                         hour=0, minute=0, second=0, microsecond=0) - moc))
 
 
-def xac_dinh_cuc_nhat_triet_bo(
-    can_ngay: str, chi_ngay: str, ten_tiet_khi: str
-) -> tuple[int, int, str]:
+def xac_dinh_cuc_nhat(year: int, month: int, day: int,
+                      lich: CachedCalendarProvider) -> tuple[int, int, date]:
     """
-    Triệt bổ pháp: từ can-chi ngày xác định Thượng/Trung/Hạ nguyên,
-    rồi tra MAP_CUC_TIET_KHI để lấy cục số và âm/dương.
+    Giáp Tý gần Đông Chí nhất = Dương 1, mỗi ngày +1 (1..9 xoay vòng);
+    Giáp Tý gần Hạ Chí nhất = Âm 9, mỗi ngày -1.
+    Các cột Vũ Thủy 7 / Cốc Vũ 4 / Xử Thử 3 / Sương Giáng 6 trong bảng của thầy
+    chính là phần đếm liên tục này, nên không cần trí nhuận.
+    Trả về (cục số, am_duong, ngày Giáp Tý khởi đếm).
     """
-    c_idx = THIEN_CAN.index(can_ngay)
-    z_idx = DIA_CHI.index(chi_ngay)
-    delta = c_idx % 5
-    chi_phu_dau_idx = (z_idx - delta) % 12
-    # 0=Tý,6=Ngọ,3=Mão,9=Dậu → Thượng; 2=Dần,8=Thân,5=Tỵ,11=Hợi → Trung; còn lại → Hạ
-    if chi_phu_dau_idx in (0, 6, 3, 9):
-        nguyen_idx = 0
-    elif chi_phu_dau_idx in (2, 8, 5, 11):
-        nguyen_idx = 1
-    else:
-        nguyen_idx = 2
-    info = MAP_CUC_TIET_KHI.get(ten_tiet_khi, ([1, 7, 4], 1))
-    cuc_so = info[0][nguyen_idx]
-    am_duong = info[1]
-    nguyen_ten = ["Thượng", "Trung", "Hạ"][nguyen_idx]
-    return cuc_so, am_duong, nguyen_ten
+    ngay = date(year, month, day)
+    moc_list = []
+    for y in (year - 1, year, year + 1):
+        for t in lich.lay_danh_sach_tiet_khi_ca_nam(y):
+            if t["Ten"] in ("Đông Chí", "Hạ Chí"):
+                moc_list.append((_giap_ty_gan_nhat(t["ThoiGianTinh"]), 1 if t["Ten"] == "Đông Chí" else -1))
+    giap_ty, am_duong = max((m for m in moc_list if m[0] <= ngay), key=lambda m: m[0])
+    n = (ngay - giap_ty).days % 9
+    cuc_so = n + 1 if am_duong == 1 else 9 - n
+    return cuc_so, am_duong, giap_ty
 
 
 def tinh_can_chi_ngay(dd: int, mm: int, yy: int) -> tuple[str, str]:
@@ -379,28 +376,23 @@ def tinh_can_chi_ngay(dd: int, mm: int, yy: int) -> tuple[str, str]:
 def lap_nhat_gia(year: int, month: int, day: int,
                  lich: CachedCalendarProvider | None = None) -> dict:
     """
-    Lập bàn Nhật Gia Kỳ Môn cho ngày year/month/day dùng Triệt Bổ Pháp.
-    Dương độn hoặc Âm độn tuỳ tiết khí.
+    Lập bàn Nhật Gia Kỳ Môn cho ngày year/month/day theo 日盤遁甲定局圖.
     Trị Phù tùy nhật can, Trị Sứ tùy nhật chi.
     """
     lich = lich or CachedCalendarProvider()
 
     ten_tiet = lich.tim_tiet_khi(year, month, day, 12, 0)
     can_ngay, chi_ngay = tinh_can_chi_ngay(day, month, year)
-    cuc_so, am_duong, nguyen = xac_dinh_cuc_nhat_triet_bo(can_ngay, chi_ngay, ten_tiet)
+    cuc_so, am_duong, giap_ty = xac_dinh_cuc_nhat(year, month, day, lich)
 
     dia_ban = an_dia_ban(cuc_so, am_duong)
     can_tuan_thu, ten_tuan = tim_tuan_thu(can_ngay, chi_ngay)
     sao_tp, cua_ts, cung_tp_goc = tim_truc_phu_truc_su(dia_ban, can_tuan_thu)
 
     # Trị Phù tùy nhật can → xoay Thiên bàn
-    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_tuan_thu)
-
-    cung_sao_tp_moi = next(
-        (c for c in VONG_TRON_8_CUNG if thien_ban[c]["Sao"] == sao_tp), cung_tp_goc
-    )
-    if cung_sao_tp_moi == 5:
-        cung_sao_tp_moi = 2
+    can_dich = can_dich_truc_phu(can_ngay, can_tuan_thu)
+    thien_ban = an_thien_ban_theo_can(dia_ban, cung_tp_goc, can_dich)
+    cung_sao_tp_moi = cung_cua_can(dia_ban, can_dich)
 
     # Trị Sứ tùy nhật chi
     chi_tuan_thu_str = ten_tuan.split()[1]
@@ -413,7 +405,7 @@ def lap_nhat_gia(year: int, month: int, day: int,
         "TietKhi": ten_tiet,
         "CanChiNgay": f"{can_ngay} {chi_ngay}",
         "AmDuong": "Dương độn" if am_duong == 1 else "Âm độn",
-        "ThongTinCuc": f"{'Dương' if am_duong == 1 else 'Âm'} {cuc_so} Cục - {nguyen} Nguyên",
+        "ThongTinCuc": f"{'Dương' if am_duong == 1 else 'Âm'} {cuc_so} Cục - đếm từ Giáp Tý {giap_ty:%d/%m/%Y}",
         "TuanThu": f"{ten_tuan} ({can_tuan_thu})",
         "TrucPhuSu": f"Trực Phù: {sao_tp} | Trực Sử: {cua_ts}",
         "Data9Cung": build_data9cung(dia_ban, thien_ban, bat_mon, bat_than),

@@ -26,7 +26,9 @@ Chế độ (tham số --ju) — khớp 4 nút trong app gốc:
 import sys
 from datetime import datetime, timedelta, timezone
 
-if sys.stdout.encoding is None or sys.stdout.encoding.lower() != "utf-8":
+# stdout trên app mobile (Flet) không có .encoding/.reconfigure -> chỉ đổi khi có thể
+_enc = getattr(sys.stdout, "encoding", None)
+if (_enc is None or _enc.lower() != "utf-8") and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 BJ = timezone(timedelta(hours=8))  # múi giờ Bắc Kinh

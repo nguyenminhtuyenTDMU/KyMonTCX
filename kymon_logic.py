@@ -374,9 +374,8 @@ class KyMonLapTran:
     def lap_que(self, nam, thang, ngay, gio, phut):
         dt_tinh, gio_tinh = self.xu_ly_gio_ty(nam, thang, ngay, gio, phut)
 
-        import pytz
-        tz_vn = pytz.timezone('Asia/Ho_Chi_Minh')
-        dt_input_tz = tz_vn.localize(datetime(nam, thang, ngay, gio, phut))
+        from tz_vn import TZ_VN
+        dt_input_tz = TZ_VN.localize(datetime(nam, thang, ngay, gio, phut))
 
         can_chi_nam_chuan = self.tinh_can_chi_nam_tiet_khi(dt_input_tz)
 

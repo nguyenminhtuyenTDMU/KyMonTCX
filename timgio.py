@@ -6,8 +6,8 @@ from kymon_logic import KyMonLapTran
 # =========================================================
 START_YEAR = 2026
 START_MONTH = 10
-START_DAY =4
-START_HOUR = 23
+START_DAY =25
+START_HOUR = 1
 START_MINUTE = 0
 
 DANH_SACH_CUNG_CAN_TIM = [2,3,4,8]
