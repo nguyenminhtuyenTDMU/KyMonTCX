@@ -152,6 +152,11 @@ def tim_tu_hai(cung_id, thien, gate):
     return [f'<span class="badge-{k}" title="{fmt[k][0].format(v)}">{fmt[k][1]}</span>' for k, v in tu_hai(cung_id, thien, gate)]
 
 
+def gon_html(html):
+    """Bỏ thụt lề và dòng trống: Markdown coi dòng trống là hết khối HTML, dòng thụt 4 space thành code block."""
+    return "".join(line.strip() for line in html.splitlines())
+
+
 def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma=""):
     tk_nhat = tk_nhat or []
     tk_thoi = tk_thoi or []
@@ -163,7 +168,7 @@ def render_ban_9cung(data9cung, tu_tru_dict, tk_nhat=None, tk_thoi=None, dich_ma
                 tu_tru_dict, tk_nhat, tk_thoi, dich_ma
             )
     full_html += '</div>'
-    st.markdown(full_html, unsafe_allow_html=True)
+    st.markdown(gon_html(full_html), unsafe_allow_html=True)
 
 
 # --- RENDER CHO ENGINE qimen.py (thuật toán chuyển bàn, có ám can) ---
@@ -233,7 +238,7 @@ def render_ban_9cung_qimen(p, tu_tru=None):
         for cid in r:
             full_html += render_cung_qimen_html(p, cid, MAP_TEN_CUNG.get(cid), tu_tru)
     full_html += '</div>'
-    st.markdown(full_html, unsafe_allow_html=True)
+    st.markdown(gon_html(full_html), unsafe_allow_html=True)
 
 
 def render_export_buttons(kq, label_prefix):
