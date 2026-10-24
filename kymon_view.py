@@ -10,7 +10,7 @@ from functools import lru_cache
 import qimen
 from kymon_logic import KyMonLapTran
 from kymon_nien_nguyet_nhat import lap_nien_gia, lap_nguyet_gia, lap_nhat_gia
-from timgio import CUNG_KICH_HINH, CUNG_NHAP_MO
+from timgio import CUNG_NHAP_MO, can_bi_hai
 
 LOAI_CUC = ["Thời Gia", "Thời Gia (Chuyển Bàn)", "Nhật Gia", "Nguyệt Gia", "Niên Gia"]
 QM_MODES = {"Chuẩn (Vương Phượng Lân)": 1, "Truyền thống (Dương bàn)": 0,
@@ -62,14 +62,15 @@ def tag_tu_tru(can, tu_tru):
     return tags
 
 
-def tu_hai(cung_id, thien, gate):
-    """[(loại, chi tiết)] cho Kích Hình / Nhập Mộ (chỉ xét can Thiên bàn) và Môn Bách (Cửa khắc Cung)."""
-    cans = [c.strip() for c in re.split(r'[/,]', thien) if c.strip() and c.strip() != "-"]
-    hinh = [c for c in dict.fromkeys(cans) if c in CUNG_KICH_HINH.get(cung_id, [])]
-    mo = [c for c in dict.fromkeys(cans) if c in CUNG_NHAP_MO.get(cung_id, [])]
+def tu_hai(cung_id, thien, dia, gate):
+    """[(loại, chi tiết)] cho Kích Hình / Nhập Mộ (thiên bàn, địa bàn, ký can) và Môn Bách (Cửa khắc Cung).
+    Chi tiết ghi tầng, vd "Ất (thiên), Kỷ (địa, ký)"."""
+    def ghi(ds):
+        return ", ".join(f"{can} ({tang}, ký)" if ky else f"{can} ({tang})" for can, tang, ky in ds)
+    hinh, mo = can_bi_hai(cung_id, thien, dia)
     res = []
-    if hinh: res.append(("hinh", ", ".join(hinh)))
-    if mo: res.append(("mo", ", ".join(mo)))
+    if hinh: res.append(("hinh", ghi(hinh)))
+    if mo: res.append(("mo", ghi(mo)))
     hanh_mon = NGU_HANH_MON.get(gate)
     if hanh_mon and HANH_KHAC[hanh_mon] == qimen.NGU_HANH_CUNG.get(cung_id):
         res.append(("bach", gate))
@@ -144,9 +145,9 @@ def qimen_pan_to_dict(p):
 # ------------------------------------------------------------------ VIEW MODEL
 # Badge: (nhãn, loại) với loại ∈ tk_n, tk_g, ma, hinh, mo, bach
 
-def _tu_hai_badges(cung_id, thien, gate):
+def _tu_hai_badges(cung_id, thien, dia, gate):
     nhan = {"hinh": "Hình", "mo": "Mộ", "bach": "Bách"}
-    return [(nhan[k], k) for k, _ in tu_hai(cung_id, thien, gate)]
+    return [(nhan[k], k) for k, _ in tu_hai(cung_id, thien, dia, gate)]
 
 
 def _cell_thuong(data, cid, tu_tru, tk_nhat, tk_thoi, dich_ma):
@@ -188,7 +189,7 @@ def _cell_qimen(p, cid, tu_tru):
     if p.kong[cid] == "O": badges.append(("Không", "tk_n"))
     for zi, gong in enumerate(qimen.zhi2gong):
         if p.maw[zi] == "马" and gong == cid: badges.append(("Mã", "ma"))
-    badges += _tu_hai_badges(cid, thien, gate)
+    badges += _tu_hai_badges(cid, thien, qimen.gan_vn(p.digan[cid]), gate)
     return {
         "id": cid, "ten": MAP_TEN_CUNG[cid], "bg": hanh_cung(cid),
         "than": qimen.SHEN_VN.get(p.shenpan[cid].strip(), "-"),

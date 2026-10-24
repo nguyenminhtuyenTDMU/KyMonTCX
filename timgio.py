@@ -1,4 +1,6 @@
 import datetime
+import os
+import re
 from kymon_logic import KyMonLapTran
 
 # =========================================================
@@ -6,11 +8,13 @@ from kymon_logic import KyMonLapTran
 # =========================================================
 START_YEAR = 2026
 START_MONTH = 10
-START_DAY =25
+START_DAY =24
 START_HOUR = 1
 START_MINUTE = 0
 
 DANH_SACH_CUNG_CAN_TIM = [2,3,4,8]
+
+FILE_KET_QUA = "ketqua_timgio.txt"  # Ghi đè mỗi lần chạy
 
 # Mapping Cung -> Địa chi (Để check Không Vong Thời)
 CUNG_CHI = {
@@ -19,10 +23,11 @@ CUNG_CHI = {
 }
 
 # Mapping Cung -> Thiên Can bị Kích Hình
-# Mậu, Kỷ hình ở Chấn, Khôn; Canh, Tân hình ở Cấn, Ly; Nhâm, Quý hình ở Tốn
+# Theo chi ẩn của Lục Nghi: Mậu(Tý) hình Mão-Chấn; Kỷ(Tuất) hình Mùi-Khôn; Canh(Thân) hình Dần-Cấn;
+# Tân(Ngọ) tự hình Ly; Nhâm(Thìn) tự hình Tốn; Quý(Dần) hình Tỵ-Tốn
 CUNG_KICH_HINH = {
-    3: ["Mậu", "Kỷ"], 2: ["Mậu", "Kỷ"],
-    8: ["Canh", "Tân"], 9: ["Canh", "Tân"],
+    3: ["Mậu"], 2: ["Kỷ"],
+    8: ["Canh"], 9: ["Tân"],
     4: ["Nhâm", "Quý"]
 }
 
@@ -33,6 +38,31 @@ CUNG_NHAP_MO = {
     2: ["Giáp", "Quý"], 6: ["Ất", "Bính", "Mậu"],
     8: ["Đinh", "Kỷ", "Canh"], 4: ["Tân", "Nhâm"]
 }
+
+
+def can_bi_hai(cung_id, thien, dia):
+    """Kích Hình / Nhập Mộ của các can trong cung: thiên bàn, địa bàn và ký can ("Nhâm,Kỷ" hoặc "Nhâm/Kỷ").
+    Ẩn can nằm ngoài cung nên không xét. Mộ + Hình cùng can thì chỉ tính Hình.
+    Trả về (hinh, mo), mỗi phần là list (can, tầng, có_phải_ký_can)."""
+    hinh, mo = [], []
+    for tang, chuoi in (("thiên", thien), ("địa", dia)):
+        cans = [c.strip() for c in re.split(r'[/,]', chuoi or "") if c.strip() and c.strip() != "-"]
+        for i, can in enumerate(cans):
+            muc = (can, tang, i > 0)
+            if can in CUNG_KICH_HINH.get(cung_id, []): hinh.append(muc)
+            elif can in CUNG_NHAP_MO.get(cung_id, []): mo.append(muc)
+    return hinh, mo
+
+
+THIEN_CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"]
+HANH_CAN = ["Mộc", "Mộc", "Hỏa", "Hỏa", "Thổ", "Thổ", "Kim", "Kim", "Thủy", "Thủy"]
+HANH_KHAC = {"Kim": "Mộc", "Mộc": "Thổ", "Thổ": "Thủy", "Thủy": "Hỏa", "Hỏa": "Kim"}
+
+
+def la_ngu_bat_ngo_thoi(can_gio, can_ngay):
+    """Ngũ Bất Ngộ Thời: thời can khắc nhật can, cùng âm dương (vd Tân khắc Ất). Gặp thì bỏ cả giờ."""
+    g, n = THIEN_CAN.index(can_gio), THIEN_CAN.index(can_ngay)
+    return HANH_KHAC[HANH_CAN[g]] == HANH_CAN[n] and g % 2 == n % 2
 
 MAP_TEN_CUNG = {
     1: "Khảm 1", 2: "Khôn 2", 3: "Chấn 3", 4: "Tốn 4",
@@ -90,13 +120,10 @@ def kiem_tra_cung_dat_chuan(kq, cung_id):
     for chi in CUNG_CHI.get(cung_id, []):
         if chi in tk_thoi: return False
 
-    # 4. Check Kích Hình (chỉ Thiên bàn)
-    can_thien_chinh = thien.split("/")[0].strip()
-    if can_thien_chinh in CUNG_KICH_HINH.get(cung_id, []):
-        return False
-
-    # 5. Check Nhập Mộ (chỉ Thiên bàn)
-    if can_thien_chinh in CUNG_NHAP_MO.get(cung_id, []):
+    # 4. Check Kích Hình (thiên bàn, địa bàn, ký can)
+    # Nhập Mộ không loại: xuất hành quyết đã bỏ điều kiện này (Đại Sư Ban p34, tiêu chí 5)
+    hinh, _ = can_bi_hai(cung_id, thien, dia)
+    if hinh:
         return False
 
     # --- ĐIỀU KIỆN ĐIỂM (SOFT CRITERIA) ---
@@ -126,11 +153,24 @@ def tim_tran_phu_hop():
     print(f"Bắt đầu quét từ: {current_time.strftime('%d/%m/%Y %H:%M')}")
     print(f"Mục tiêu: Cung {DANH_SACH_CUNG_CAN_TIM}\n")
 
+    with open(FILE_KET_QUA, "w", encoding="utf-8") as f:
+        so_ket_qua = quet(km, current_time, end_time, f)
+
+    print(f"Xong! Tìm thấy {so_ket_qua} trận đồ, đã ghi vào: {os.path.abspath(FILE_KET_QUA)}")
+
+
+def quet(km, current_time, end_time, f):
+    so_ket_qua = 0
     while current_time < end_time:
         try:
             kq = km.lap_que(current_time.year, current_time.month, current_time.day, current_time.hour,
                             current_time.minute)
-        except:
+        except Exception:
+            current_time += datetime.timedelta(hours=2)
+            continue
+
+        # Ngũ Bất Ngộ Thời: cả tám phương đều không dùng, bỏ luôn giờ này
+        if la_ngu_bat_ngo_thoi(kq['TuTru']['Gio'].split()[0], kq['TuTru']['Ngay'].split()[0]):
             current_time += datetime.timedelta(hours=2)
             continue
 
@@ -139,21 +179,21 @@ def tim_tran_phu_hop():
                 c_data = kq['Data9Cung'][cung_id]
                 # diem = tinh_diem_cat(c_data['Thien'], c_data['Dia'], c_data['Sao'], c_data['Than'], c_data['Cua'])
 
-                print(f"⭐ TÌM THẤY TRẬN ĐỒ ƯNG Ý!")
-                print("-" * 55)
-                print(f"⏰ Thời gian: {current_time.strftime('%H:%M - %d/%m/%Y')}")
-                print(f"🎯 Cung: {MAP_TEN_CUNG[cung_id].upper()}")
+                so_ket_qua += 1
+                print(f"⭐ TÌM THẤY TRẬN ĐỒ ƯNG Ý!", file=f)
+                print("-" * 55, file=f)
+                print(f"⏰ Thời gian: {current_time.strftime('%H:%M - %d/%m/%Y')}", file=f)
+                print(f"🎯 Cung: {MAP_TEN_CUNG[cung_id].upper()}", file=f)
                 print(
-                    f"📜 Tứ Trụ: {kq['TuTru']['Nam']} - {kq['TuTru']['Thang']} - {kq['TuTru']['Ngay']} - {kq['TuTru']['Gio']}")
-                print(f"⚙️ Cục: {kq['ThongTinCuc']} | Tuần Thủ: {kq['TuanThu']}")
-                print(f"🔹 Thần: {c_data['Than']} | Sao: {c_data['Sao']} | Cửa: {c_data['Cua']}")
-                print(f"🔹 Thiên/Địa: {c_data['Thien']} / {c_data['Dia']}")
-                print("-" * 55)
-                return
-                # Nếu chỉ tìm 1 kết quả gần nhất thì return, nếu tìm hết thì bỏ return
-
+                    f"📜 Tứ Trụ: {kq['TuTru']['Nam']} - {kq['TuTru']['Thang']} - {kq['TuTru']['Ngay']} - {kq['TuTru']['Gio']}", file=f)
+                print(f"⚙️ Cục: {kq['ThongTinCuc']} | Tuần Thủ: {kq['TuanThu']}", file=f)
+                print(f"🔹 Thần: {c_data['Than']} | Sao: {c_data['Sao']} | Cửa: {c_data['Cua']}", file=f)
+                print(f"🔹 Thiên/Địa: {c_data['Thien']} / {c_data['Dia']}", file=f)
+                print("-" * 55, file=f)
+                # Nếu chỉ tìm 1 kết quả gần nhất thì return so_ket_qua, nếu tìm hết thì bỏ return
 
         current_time += datetime.timedelta(hours=2)
+    return so_ket_qua
 
 
 if __name__ == "__main__":
