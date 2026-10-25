@@ -374,8 +374,7 @@ def main():
                     <div><div class="tu-tru-label">Năm</div><div class="tu-tru-item {lay_class_mau(tt['Nam'].split()[0])}">{tt['Nam']}</div></div>
                     <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(tt['Thang'].split()[0])}">{tt['Thang']}</div></div>
                     <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(tt['Ngay'].split()[0])}">{tt['Ngay']}</div></div>
-                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(tt['Gio'].split()[0])}">{tt['Gio']}</div></div>
-                    {o_khac}
+                    <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(tt['Gio'].split()[0])}">{tt['Gio']}</div></div>{o_khac}
                 </div>
                 <div style="margin-top:10px;text-align:center;color:#000">
                     <b>Tiết {kq_qm['TietKhi']}</b> &bull; <b>{kq_qm['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq_qm['TuanThu']}</b>
