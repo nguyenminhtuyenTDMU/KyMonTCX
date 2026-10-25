@@ -450,7 +450,8 @@ class KyMonLapTran:
             "ThoiCanHien": thoi_can_hien,
             "TuanThu": ten_tuan,
             "GiapAnNghi": can_tuan_thu if can_gio == "Giáp" else None,
-            "NhatCanCung": self.tim_cung_theo_can(data9, can_ngay),
+            # Nhật can Giáp cũng ẩn dưới Trực Phù của giờ (không theo tuần của ngày)
+            "NhatCanCung": self.tim_cung_theo_can(data9, self.doi_giap_sang_nghi_an(can_ngay, can_tuan_thu)),
             "ThoiCanCung": self.tim_cung_theo_can(data9, thoi_can_hien),
             "KhaiMonCung": self.tim_cung_theo_cua(data9, "Khai"),
             "SinhMonCung": self.tim_cung_theo_cua(data9, "Sinh"),

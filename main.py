@@ -20,7 +20,7 @@ NEN_CUNG = {"kim": ("#eeeeee", "#bdbdbd"), "moc": ("#e8f5e9", "#a5d6a7"), "thuy"
             "hoa": ("#ffebee", "#ef9a9a"), "tho": ("#fff9c4", "#fff59d")}
 MAU_BADGE = {"tk_n": ("#c62828", "#ffffff"), "tk_g": ("#ef6c00", "#ffffff"), "ma": ("#fdd835", "#000000"),
              "hinh": ("#6a1b9a", "#ffffff"), "mo": ("#424242", "#ffffff"), "bach": ("#1565c0", "#ffffff")}
-MAU_TAG = {"Y": "#795548", "M": "#2e7d32", "D": "#ef6c00", "H": "#c62828"}
+MAU_TAG = {"Y": "#795548", "M": "#2e7d32", "D": "#ef6c00", "H": "#c62828", "K": "#00838f"}
 CHU_THICH_BADGE = {"hinh": "Kích Hình", "mo": "Nhập Mộ", "bach": "Môn Bách"}
 
 

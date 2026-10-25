@@ -39,7 +39,7 @@ st.markdown("""
     .cung-so { position: absolute; bottom: 26px; right: 4px; font-size: 0.65em; color: rgba(0,0,0,0.4); font-style: italic; pointer-events: none; }
     .tag-container-thien { position: absolute; top: 22px; left: 4px; display: flex; flex-direction: column; gap: 1px; }
     .tag-can { font-size: 0.5em; border-radius: 2px; padding: 0 3px; color: white; text-align: center; width: 16px;}
-    .tag-y { background-color: #795548; } .tag-m { background-color: #2e7d32; } .tag-d { background-color: #ef6c00; } .tag-h { background-color: #c62828; }
+    .tag-y { background-color: #795548; } .tag-m { background-color: #2e7d32; } .tag-d { background-color: #ef6c00; } .tag-h { background-color: #c62828; } .tag-k { background-color: #00838f; }
     .tag-mo { font-size: 0.6em; color: #78909c; vertical-align: super; margin-left: 1px; } .tag-mo-mon { font-size: 0.6em; color: #546e7a; font-weight: normal; margin-left: 2px;}
     .hanh-kim { color: #455a64; } .hanh-moc { color: #1b5e20; } .hanh-thuy { color: #01579b; } .hanh-hoa { color: #b71c1c; } .hanh-tho { color: #4e342e; } 
     .tu-tru-box { background-color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
@@ -70,6 +70,7 @@ def tao_tag_tu_tru(can, tu_tru):
         if c == tu_tru['M']: h += '<div class="tag-can tag-m">M</div>'
         if c == tu_tru['D']: h += '<div class="tag-can tag-d">D</div>'
         if c == tu_tru['H']: h += '<div class="tag-can tag-h">H</div>'
+        if tu_tru.get('K') and c == tu_tru['K']: h += '<div class="tag-can tag-k">K</div>'
     return h
 
 
@@ -315,11 +316,12 @@ def main():
             render_export_buttons(kq, f"ky_mon_thoi_{y}_{m}_{d}_{h}_{mi}")
 
             cc = kq['TuTru']
+            nghi_tp = kq['HiddenStems']['Current']['Nghi']  # Giáp ẩn dưới Trực Phù của giờ
             tu_tru_dict = {
-                'Y': xu_ly_don_giap(cc['Nam']),
-                'M': xu_ly_don_giap(cc['Thang']),
-                'D': xu_ly_don_giap(cc['Ngay']),
-                'H': xu_ly_don_giap(cc['Gio'])
+                'Y': xu_ly_don_giap(cc['Nam'], nghi_tp),
+                'M': xu_ly_don_giap(cc['Thang'], nghi_tp),
+                'D': xu_ly_don_giap(cc['Ngay'], nghi_tp),
+                'H': xu_ly_don_giap(cc['Gio'], nghi_tp)
             }
             tiet = kq['CanChi'].split('|')[-1].replace('Tiết ', '').strip()
             tk_nhat = kq['InfoTuanKhong']['Nhat']
@@ -355,12 +357,17 @@ def main():
             render_export_buttons(kq_qm, f"ky_mon_chuyenban_{y}_{m}_{d}_{h}_{mi}")
 
             tt = kq_qm['TuTru']
+            nghi_tp = xu_ly_don_giap(kq_qm['TuanThu'])  # Giáp ẩn dưới Trực Phù của giờ
             tu_tru_dict_qm = {
-                'Y': xu_ly_don_giap(tt['Nam']),
-                'M': xu_ly_don_giap(tt['Thang']),
-                'D': xu_ly_don_giap(tt['Ngay']),
-                'H': xu_ly_don_giap(tt['Gio'])
+                'Y': xu_ly_don_giap(tt['Nam'], nghi_tp),
+                'M': xu_ly_don_giap(tt['Thang'], nghi_tp),
+                'D': xu_ly_don_giap(tt['Ngay'], nghi_tp),
+                'H': xu_ly_don_giap(tt['Gio'], nghi_tp)
             }
+            o_khac = ""
+            if 'Khac' in tt:  # khắc bàn
+                tu_tru_dict_qm['K'] = xu_ly_don_giap(tt['Khac'], nghi_tp)
+                o_khac = f'<div><div class="tu-tru-label">Khắc</div><div class="tu-tru-item {lay_class_mau(tt["Khac"].split()[0])}">{tt["Khac"]}</div></div>'
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="display:flex;justify-content:space-around;">
@@ -368,6 +375,7 @@ def main():
                     <div><div class="tu-tru-label">Tháng</div><div class="tu-tru-item {lay_class_mau(tt['Thang'].split()[0])}">{tt['Thang']}</div></div>
                     <div><div class="tu-tru-label">Ngày</div><div class="tu-tru-item {lay_class_mau(tt['Ngay'].split()[0])}">{tt['Ngay']}</div></div>
                     <div><div class="tu-tru-label">Giờ</div><div class="tu-tru-item {lay_class_mau(tt['Gio'].split()[0])}">{tt['Gio']}</div></div>
+                    {o_khac}
                 </div>
                 <div style="margin-top:10px;text-align:center;color:#000">
                     <b>Tiết {kq_qm['TietKhi']}</b> &bull; <b>{kq_qm['ThongTinCuc']}</b> &bull; Tuần Thủ: <b>{kq_qm['TuanThu']}</b>
@@ -387,7 +395,7 @@ def main():
             kq = lap_nhat_gia(y, m, d)
             render_export_buttons(kq, f"ky_mon_nhat_{y}_{m}_{d}")
             can_ngay = kq['CanChiNgay'].split()[0]
-            tu_tru_dict = {'Y': '', 'M': '', 'D': can_ngay, 'H': ''}
+            tu_tru_dict = {'Y': '', 'M': '', 'D': xu_ly_don_giap(kq['CanChiNgay']), 'H': ''}
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">
@@ -412,7 +420,7 @@ def main():
             kq = lap_nguyet_gia(y, m, d)
             render_export_buttons(kq, f"ky_mon_nguyet_{y}_{m}_{d}")
             can_thang = kq['CanChiThang'].split()[0]
-            tu_tru_dict = {'Y': '', 'M': can_thang, 'D': '', 'H': ''}
+            tu_tru_dict = {'Y': '', 'M': xu_ly_don_giap(kq['CanChiThang']), 'D': '', 'H': ''}
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">
@@ -437,7 +445,7 @@ def main():
             kq = lap_nien_gia(y)
             render_export_buttons(kq, f"ky_mon_nien_{y}")
             can_nam = kq['CanChiNam'].split()[0]
-            tu_tru_dict = {'Y': can_nam, 'M': '', 'D': '', 'H': ''}
+            tu_tru_dict = {'Y': xu_ly_don_giap(kq['CanChiNam']), 'M': '', 'D': '', 'H': ''}
             st.markdown(f"""
             <div class="tu-tru-box">
                 <div style="text-align:center;font-size:1.1em;font-weight:bold;color:#000">

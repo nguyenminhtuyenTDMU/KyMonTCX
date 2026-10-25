@@ -43,11 +43,15 @@ def hanh_cung(cung_id):
     return {1: "thuy", 9: "hoa", 3: "moc", 4: "moc", 6: "kim", 7: "kim"}.get(cung_id, "tho")
 
 
-def xu_ly_don_giap(cc):
+def xu_ly_don_giap(cc, nghi_truc_phu=None):
+    """Can của trụ để dán nhãn Y/M/D/H. Giáp không hiện trên bàn mà ẩn dưới lục nghi của Trực Phù.
+    Thời bàn: truyền nghi_truc_phu = lục nghi đầu tuần của GIỜ (Tử Kỳ: "Giáp nằm ở cung Trực Phù nào
+    thì phải xem giờ lập bàn"), vd ngày Giáp Thìn giờ Kỷ Tỵ → Mậu, không phải Nhâm.
+    Không truyền: lấy theo tuần của chính trụ (đúng cho nhật/nguyệt/niên bàn, Trực Phù tùy trụ đó)."""
     p = cc.split()
-    if p[0] == "Giáp": return {"Tý": "Mậu", "Tuất": "Kỷ", "Thân": "Canh", "Ngọ": "Tân", "Thìn": "Nhâm",
-                               "Dần": "Quý"}.get(p[1], p[0])
-    return p[0]
+    if p[0] != "Giáp": return p[0]
+    if nghi_truc_phu: return nghi_truc_phu
+    return {"Tý": "Mậu", "Tuất": "Kỷ", "Thân": "Canh", "Ngọ": "Tân", "Thìn": "Nhâm", "Dần": "Quý"}.get(p[1], p[0])
 
 
 def tag_tu_tru(can, tu_tru):
@@ -57,8 +61,8 @@ def tag_tu_tru(can, tu_tru):
     for c in re.split(r'[/,]', can):
         c = c.strip()
         if not c: continue
-        for k in ("Y", "M", "D", "H"):
-            if c == tu_tru[k]: tags.append(k)
+        for k in ("Y", "M", "D", "H", "K"):
+            if tu_tru.get(k) and c == tu_tru[k]: tags.append(k)
     return tags
 
 
@@ -123,14 +127,17 @@ def qimen_pan_to_dict(p):
         }
 
     tY, tM, tD, tH, tMin = p.ngaygio
+    tu_tru = {
+        "Nam": qimen.cyclical_vn(p.cY),
+        "Thang": qimen.cyclical_vn(p.cM),
+        "Ngay": qimen.cyclical_vn(p.cD),
+        "Gio": qimen.cyclical_vn(p.gio_tru),
+    }
+    if p.khac_tru is not None:  # khắc bàn: thêm trụ khắc
+        tu_tru["Khac"] = qimen.cyclical_vn(p.khac_tru)
     return {
         "GioLapTran": f"{tD:02d}/{tM:02d}/{tY} {tH:02d}:{tMin:02d}",
-        "TuTru": {
-            "Nam": qimen.cyclical_vn(p.cY),
-            "Thang": qimen.cyclical_vn(p.cM),
-            "Ngay": qimen.cyclical_vn(p.cD),
-            "Gio": qimen.cyclical_vn(p.gio_tru),
-        },
+        "TuTru": tu_tru,
         "TietKhi": qimen.solarTerm_vn[p.tmp2],
         "ThongTinCuc": f"{yy_label} {p.qmju} Cục",
         "TuanThu": qimen.cyclical_vn(p.xun_num),
@@ -203,9 +210,11 @@ def _cell_qimen(p, cid, tu_tru):
     }
 
 
-def _tu_tru_dict(tt):
-    return {'Y': xu_ly_don_giap(tt['Nam']), 'M': xu_ly_don_giap(tt['Thang']),
-            'D': xu_ly_don_giap(tt['Ngay']), 'H': xu_ly_don_giap(tt['Gio'])}
+def _tu_tru_dict(tt, nghi_truc_phu):
+    """Thời bàn: mọi trụ Giáp đều ẩn dưới lục nghi của Trực Phù (tuần của giờ; khắc bàn là tuần của khắc)."""
+    return {k: xu_ly_don_giap(tt[ten], nghi_truc_phu)
+            for k, ten in (('Y', 'Nam'), ('M', 'Thang'), ('D', 'Ngay'), ('H', 'Gio'), ('K', 'Khac'))
+            if ten in tt}
 
 
 def lap_tran(loai, y, m, d, h=12, mi=0, qm_mode=1, qm_setju=0):
@@ -224,7 +233,7 @@ def lap_tran(loai, y, m, d, h=12, mi=0, qm_mode=1, qm_setju=0):
         km = lay_km()
         kq = km.lap_que(y, m, d, h, mi)
         cc = kq['TuTru']
-        tt = _tu_tru_dict(cc)
+        tt = _tu_tru_dict(cc, kq['HiddenStems']['Current']['Nghi'])
         tk_nhat = kq['InfoTuanKhong']['Nhat']
         tk_thoi = kq['InfoTuanKhong']['Thoi']
         dich_ma = km.tim_dich_ma(cc['Gio'].split()[1])
@@ -244,11 +253,12 @@ def lap_tran(loai, y, m, d, h=12, mi=0, qm_mode=1, qm_setju=0):
         p = qimen.paipan(datetime(y, m, d, h, mi), yinpan=qm_mode, setju=qm_setju)
         kq = qimen_pan_to_dict(p)
         cc = kq['TuTru']
-        tt = _tu_tru_dict(cc)
+        tt = _tu_tru_dict(cc, xu_ly_don_giap(kq['TuanThu']))
         return {
             "kq": kq, "file_name": f"ky_mon_chuyenban_{y}_{m}_{d}_{h}_{mi}",
             "tu_tru": [("Năm", cc['Nam'], ""), ("Tháng", cc['Thang'], ""),
-                       ("Ngày", cc['Ngay'], ""), ("Giờ", cc['Gio'], "")],
+                       ("Ngày", cc['Ngay'], ""), ("Giờ", cc['Gio'], "")]
+                      + ([("Khắc", cc['Khac'], "")] if 'Khac' in cc else []),
             "lines": [f"Tiết {kq['TietKhi']} • {kq['ThongTinCuc']} • Tuần Thủ: {kq['TuanThu']}", kq['TrucPhuSu'],
                       f"Giờ Việt Nam dùng lập trận: {kq['GioLapTran']}"],
             "badges": [(f"Không Vong: {kq['KhongVong']}", "tk_n"), (f"Mã: {kq['DichMa']}", "ma")],
@@ -257,24 +267,21 @@ def lap_tran(loai, y, m, d, h=12, mi=0, qm_mode=1, qm_setju=0):
 
     if loai == "Nhật Gia":
         kq = lap_nhat_gia(y, m, d)
-        can = kq['CanChiNgay'].split()[0]
-        tt = {'Y': '', 'M': '', 'D': can, 'H': ''}
+        tt = {'Y': '', 'M': '', 'D': xu_ly_don_giap(kq['CanChiNgay']), 'H': ''}
         tu_tru = [("Ngày", kq['CanChiNgay'], "")]
         lines = [f"Nhật Gia — Ngày {kq['Ngay']}", f"{kq['TietKhi']} • {kq['ThongTinCuc']} • {kq['AmDuong']}",
                  f"Tuần Thủ: {kq['TuanThu']}", kq['TrucPhuSu']]
         file_name = f"ky_mon_nhat_{y}_{m}_{d}"
     elif loai == "Nguyệt Gia":
         kq = lap_nguyet_gia(y, m, d)
-        can = kq['CanChiThang'].split()[0]
-        tt = {'Y': '', 'M': can, 'D': '', 'H': ''}
+        tt = {'Y': '', 'M': xu_ly_don_giap(kq['CanChiThang']), 'D': '', 'H': ''}
         tu_tru = [("Tháng", kq['CanChiThang'], "")]
         lines = [f"Nguyệt Gia — Ngày {kq['NgayHoi']}", f"{kq['TietKhi']} • {kq['ThongTinCuc']}",
                  f"Tuần Thủ: {kq['TuanThu']}", kq['TrucPhuSu']]
         file_name = f"ky_mon_nguyet_{y}_{m}_{d}"
     elif loai == "Niên Gia":
         kq = lap_nien_gia(y)
-        can = kq['CanChiNam'].split()[0]
-        tt = {'Y': can, 'M': '', 'D': '', 'H': ''}
+        tt = {'Y': xu_ly_don_giap(kq['CanChiNam']), 'M': '', 'D': '', 'H': ''}
         tu_tru = [("Năm", kq['CanChiNam'], f"{kq['TamNguyen']} Nguyên")]
         lines = [f"Niên Gia — Năm {kq['Nam']}", kq['ThongTinCuc'],
                  f"Tuần Thủ: {kq['TuanThu']}", kq['TrucPhuSu']]
