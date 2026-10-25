@@ -19,7 +19,7 @@ App không cần Skyfield hay `de440s.bsp`: tiết khí đọc từ `data/tiet_k
 Chạy thử trên máy:
 
 ```bash
-pip install "flet[all]==1.0.3"
+pip install "flet[all]==1.0.5"
 flet run main.py            # cửa sổ desktop
 flet run --android main.py  # chạy thử trên điện thoại qua app "Flet" (cùng mạng Wi-Fi)
 ```

@@ -5,7 +5,7 @@ version = "1.0.0"
 description = "Kỳ Môn Độn Giáp - lập trận offline"
 requires-python = ">=3.10"
 dependencies = [
-    "flet==1.0.3",
+    "flet==1.0.5",
 ]
 
 [tool.flet]
@@ -26,8 +26,3 @@ exclude = [
 
 [tool.flet.android]
 split_per_abi = true
-
-# Flet 1.0.3 ghim jni 1.0.0, nhưng jni_flutter 1.0.4 trở lên đòi jni ^1.1.0 (JniVersionCheck(1, 1)) -> lỗi build APK.
-# Ghim jni_flutter về 1.0.3 — bản cuối còn tương thích jni 1.0.x. Bỏ dòng này khi nâng Flet lên bản đã sửa.
-[tool.flet.flutter.pubspec.dependency_overrides]
-jni_flutter = "1.0.3"
